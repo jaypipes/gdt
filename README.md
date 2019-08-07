@@ -155,7 +155,6 @@ Consider a Ginkgo Golang test case that checks the following behavior:
 A typical implementation of a Ginkgo Golang test might look like this:
 
 ```go
-```go
 package books_test
 
 import (
@@ -272,9 +271,10 @@ tests:
    GET: $LOCATION
    response:
      status: 200
-     json_paths:
-       $.author.name: Ernest Hemingway
-       $.publisher.state: New York
-     json_path_formats:
-       $.id: uuid
+     json
+       paths:
+         $.author.name: Ernest Hemingway
+         $.publisher.state: New York
+       path_formats:
+         $.id: uuid
 ```
