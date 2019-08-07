@@ -1,9 +1,9 @@
 # `gdt` - The Golang declarative testing framework
 
 `gdt` is a wrapper around the [`gingko`](http://onsi.github.io/ginkgo/) Golang
-behavior-driven development (BDD) testing library that allows test authors to
-cleanly describe tests in a YAML file. `gdt` reads YAML files that describe a
-test and automatically creates the Ginkgo objects in a test suite.
+testing library that allows test authors to cleanly describe tests in a YAML
+file. `gdt` reads YAML files that describe a test and automatically creates the
+Ginkgo objects in a test suite.
 
 ## Introduction
 
@@ -114,21 +114,23 @@ Describe("Books API - GET /books failures", func() {
 
 The above Ginkgo Golang test code obscures what is being tested. Compare the
 above with how `gdt` would allow the test author to validate the same
-assertions (`examples/books/failures.yaml`):
+assertions (`examples/books/tests/failures.yaml`):
 
 ```yaml
 fixtures:
  - BooksAPI
 tests:
  - name: no such book was found
-   get: /books/nosuchbook
+   GET: /books/nosuchbook
    response:
-     length: 0
+     json:
+       length: 0
      status: 404
  - name: invalid query parameter is supplied
-   get: /books?invalidparam=1
+   GET: /books?invalidparam=1
    response:
-     length: 0
+     json:
+       length: 0
      status: 400
      strings:
        - invalid parameter
@@ -136,3 +138,143 @@ tests:
 
 No more closures and boilerplate function code getting in the way of expressing
 the assertions, which should be the focus of the test.
+
+The more intricate the assertions being verified by the test, generally the
+more verbose and cumbersome the Golang test code becomes. First and foremost,
+tests should be *readable*. If they are not readable, then the test's
+assertions are not *understandable*. And tests that cannot easily be understood
+are often the source of bit rot and technical debt.
+
+Consider a Ginkgo Golang test case that checks the following behavior:
+
+* When a book is created via a call to `POST /books`, we are able to get book information from the link returned in the HTTP response's `Location` header
+* The newly-created book's author name should be set to a known value
+* The newly-created book's ID field is a valid UUID
+* The newly-created book's publisher has an address containing a country and postal code
+
+A typical implementation of a Ginkgo Golang test might look like this:
+
+```go
+```go
+package books_test
+
+import (
+    "encoding/json"
+    "regex"
+
+    . "/path/to/books"
+    . "github.com/onsi/ginkgo"
+    . "github.com/onsi/gomega"
+)
+
+func IsValidUUID(uuid string) bool {
+    r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
+    return r.MatchString(uuid)
+}
+
+Describe("Books API - GET /books/$id", func() {
+    var client APIClient
+    var booksServer books.BooksServer
+    var response chan APIResponse
+    var newBookURL string
+
+    var authorID := getAuthorFixtureByName("Ernest Hemingway").ID
+    var publisherID := getPublisherFixtureByName("Charles Scribner's Sons").ID
+
+    BeforeEach(func() {
+        response = make(chan APIResponse, 1)
+        booksServer = NewBookServer()
+        client = NewAPIClient(booksServer)
+    })
+
+    Describe("proper HTTP GET after POST", func() {
+        Context("when creating a single book resource", func() {
+            BeforeEach(func() {
+                req := books.CreateBookAPIRequest{
+                    Name: "For Whom The Bell Tolls",
+                    AuthorID: authorID,
+                    PublisherID: publisherID,
+                    PublishedOn: "1940-10-21",
+                }
+                payload, err := json.Marshal()
+                if err != nil {
+                    Fail("Failed to serialize JSON in setup")
+                }
+                client.Post("/books", payload)
+            })
+
+            It("should return 201", func() {
+                Ω((<-response).StatusCode).Should(Equal(200))
+            })
+
+            It("should return a Location HTTP header", func() {
+                Ω((<-response).Headers).Should(Contain("Location"))
+            })
+
+            newBookURL := (<-response).Headers["Location"]
+        }
+
+        Context("when creating a single book resource", func() {
+            BeforeEach(func() {
+                client.Get(newBookURL, response)
+            })
+
+            var book books.Book
+            err := json.Unmarshal([]byte((<-response).JSON)), &book)
+
+            It("should have valid JSON", func() {
+                Ω(err).Should(BeNil())
+            })
+
+            It("should have a UUID as ID attribute", func() {
+                Ω(IsValidUUID(book.ID)).Should(BeTrue())
+            })
+
+            It("should have an Author sub-object", func() {
+                Ω(book.Author).ShouldNot(BeNil())
+            })
+
+            It("should have an Author Name as expected", func() {
+                Ω(book.Author.Name).Should(Equal("Ernest Hemingway"))
+            })
+
+            It("should have a Publisher sub-object", func() {
+                Ω(book.Publisher).ShouldNot(BeNil())
+            })
+
+            It("should have an Publisher State as expected", func() {
+                Ω(book.Publisher.State).Should(Equal("New York"))
+            })
+        })
+    })
+})
+```
+
+Compare the above test code to the following YAML document that a `gdt` user
+might use to validate the same assertion:
+
+```yaml
+fixtures:
+ - BooksAPI
+ - Authors
+tests:
+ - name: create a new book
+   POST: /books
+   data:
+     name: Ernest Hemingway
+     authorID: $FIXTURES['Authors']['Ernest Hemingway']
+     publisherID: $FIXTURES['Publishers']["Charles Scribner's Sons"]
+   response:
+     status: 201
+     headers:
+      - Location
+ - name: look up that created book
+   GET: $LOCATION
+   response:
+     status: 200
+     json_paths:
+       $.author.name: Ernest Hemingway
+       $.publisher.state: New York
+     json_path_formats:
+       $.id: uuid
+```
