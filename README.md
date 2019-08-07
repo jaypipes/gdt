@@ -113,7 +113,7 @@ Describe("Books API - GET /books failures", func() {
 ```
 
 The above Ginkgo Golang test code obscures what is being tested. Compare the
-above with how `gdt` would allow the test author to validate the same
+above with how `gdt` would allow the test author to describe the same
 assertions (`examples/books/tests/failures.yaml`):
 
 ```yaml
@@ -150,7 +150,7 @@ Consider a Ginkgo Golang test case that checks the following behavior:
 * When a book is created via a call to `POST /books`, we are able to get book information from the link returned in the HTTP response's `Location` header
 * The newly-created book's author name should be set to a known value
 * The newly-created book's ID field is a valid UUID
-* The newly-created book's publisher has an address containing a country and postal code
+* The newly-created book's publisher has an address containing a known state code
 
 A typical implementation of a Ginkgo Golang test might look like this:
 
@@ -171,7 +171,7 @@ func IsValidUUID(uuid string) bool {
     return r.MatchString(uuid)
 }
 
-Describe("Books API - GET /books/$id", func() {
+Describe("Books API", func() {
     var client APIClient
     var booksServer books.BooksServer
     var response chan APIResponse
@@ -241,6 +241,10 @@ Describe("Books API - GET /books/$id", func() {
                 Ω(book.Publisher).ShouldNot(BeNil())
             })
 
+            It("should have a Publisher.Address sub-object", func() {
+                Ω(book.Publisher.Address).ShouldNot(BeNil())
+            })
+
             It("should have an Publisher State as expected", func() {
                 Ω(book.Publisher.State).Should(Equal("New York"))
             })
@@ -250,19 +254,21 @@ Describe("Books API - GET /books/$id", func() {
 ```
 
 Compare the above test code to the following YAML document that a `gdt` user
-might use to validate the same assertion:
+might create to describe the same assertion
+(`examples/books/tests/create-then-get.yaml`):
 
 ```yaml
 fixtures:
  - BooksAPI
  - Authors
+ - Publishers
 tests:
  - name: create a new book
    POST: /books
    data:
      name: Ernest Hemingway
-     authorID: $FIXTURES['Authors']['Ernest Hemingway']
-     publisherID: $FIXTURES['Publishers']["Charles Scribner's Sons"]
+     authorID: $FIXTURES['Authors']['Ernest Hemingway']['ID']
+     publisherID: $FIXTURES['Publishers']["Charles Scribner's Sons"]['ID']
    response:
      status: 201
      headers:
@@ -271,10 +277,10 @@ tests:
    GET: $LOCATION
    response:
      status: 200
-     json
+     json:
        paths:
          $.author.name: Ernest Hemingway
-         $.publisher.state: New York
+         $.publisher.address.state: New York
        path_formats:
          $.id: uuid
 ```
