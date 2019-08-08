@@ -1,0 +1,21 @@
+[
+{
+"id": "1",
+"title": "For Whom The Bell Tolls",
+"published_on": "1940-10-21",
+"author": {
+  "name": "Ernest Hemingway",
+  "id": "1"
+},
+"publisher": {
+  "name": "Charles Scribner's Sons",
+  "address": {
+    "address": "153–157 Fifth Avenue",
+    "city": "New York City",
+    "state": "NY",
+    "postal_code": "10010",
+    "country_code": "US"
+  }
+}
+}
+]

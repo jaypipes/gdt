@@ -15,15 +15,26 @@ import (
 )
 
 var (
-	listenAddr string
+	listenAddr   string
+	dataFilepath string
 )
 
 func main() {
 	flag.StringVar(&listenAddr, "listen", ":8081", "Books API server listen address")
+	flag.StringVar(&dataFilepath, "data-filepath", "books.json", "File with Books JSON data")
 	flag.Parse()
 
+	var data []*api.Book
+	dataFile, err := os.Open(dataFilepath)
+	if err != nil {
+		panic(err)
+	}
+	if err = json.NewDecoder(dataFile).Decode(&data); err != nil {
+		panic(err)
+	}
+
 	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
-	c := api.NewController(logger)
+	c := api.NewControllerWithBooks(logger, data)
 	router := http.NewServeMux()
 	router.Handle("/books", books(c))
 
@@ -61,13 +72,29 @@ func main() {
 
 func books(c *api.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
+		switch r.Method {
+		case "POST":
 			postBooks(c, w, r)
+			return
+		case "GET":
+			if r.URL.Path == "/books" {
+				listBooks(c, w, r)
+			} else {
+				// getBook(c, w, r)
+			}
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
 	})
+}
+
+func listBooks(c *api.Controller, w http.ResponseWriter, r *http.Request) {
+	var lbr api.ListBooksResponse
+	lbr.Books = c.ListBooks()
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	json.NewEncoder(w).Encode(&lbr)
+	w.WriteHeader(http.StatusOK)
 }
 
 func postBooks(c *api.Controller, w http.ResponseWriter, r *http.Request) {

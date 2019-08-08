@@ -32,6 +32,36 @@ func NewController(logger *log.Logger) *Controller {
 	}
 }
 
+func NewControllerWithBooks(logger *log.Logger, data []*Book) *Controller {
+	authors := make(map[string]*Author, 0)
+	publishers := make(map[string]*Publisher, 0)
+	books := make(map[string]*Book, len(data))
+	for _, book := range data {
+		if book.Author != nil {
+			if book.Author.ID != "" {
+				if _, found := authors[book.Author.ID]; !found {
+					authors[book.Author.ID] = book.Author
+				}
+			}
+		}
+		if book.Publisher != nil {
+			if book.Publisher.ID != "" {
+				if _, found := publishers[book.Publisher.ID]; !found {
+					publishers[book.Publisher.ID] = book.Publisher
+				}
+			}
+		}
+		books[book.ID] = book
+	}
+	return &Controller{
+		lock:       &sync.Mutex{},
+		logger:     logger,
+		authors:    authors,
+		publishers: publishers,
+		books:      books,
+	}
+}
+
 func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
@@ -55,6 +85,14 @@ func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
 		Publisher:   publisher,
 	}
 	return createdID, nil
+}
+
+func (c *Controller) ListBooks() []*Book {
+	res := make([]*Book, 0, len(c.books))
+	for _, book := range c.books {
+		res = append(res, book)
+	}
+	return res
 }
 
 func (c *Controller) Log(args ...interface{}) {

@@ -6,3 +6,7 @@ type CreateBookRequest struct {
 	PublisherID string `json:"publisher_id"`
 	PublishedOn string `json:"published_on"`
 }
+
+type ListBooksResponse struct {
+	Books []*Book `json:"books"`
+}
