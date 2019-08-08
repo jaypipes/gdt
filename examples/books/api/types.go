@@ -14,15 +14,15 @@ type Address struct {
 }
 
 type Publisher struct {
-	ID      string  `json:"id"`
-	Name    string  `json:"name"`
-	Address Address `json:"address"`
+	ID      string   `json:"id"`
+	Name    string   `json:"name"`
+	Address *Address `json:"address"`
 }
 
 type Book struct {
-	ID          string    `json:"id"`
-	Title       string    `json:"title"`
-	PublishedOn string    `json:"published_on"`
-	Author      Author    `json:"author"`
-	Publisher   Publisher `json:"publisher"`
+	ID          string     `json:"id"`
+	Title       string     `json:"title"`
+	PublishedOn string     `json:"published_on"`
+	Author      *Author    `json:"author"`
+	Publisher   *Publisher `json:"publisher"`
 }
