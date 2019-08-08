@@ -147,7 +147,8 @@ are often the source of bit rot and technical debt.
 
 Consider a Ginkgo Golang test case that checks the following behavior:
 
-* When a book is created via a call to `POST /books`, we are able to get book information from the link returned in the HTTP response's `Location` header
+* When a book is created via a call to `POST /books`, we are able to get book
+ information from the link returned in the HTTP response's `Location` header
 * The newly-created book's author name should be set to a known value
 * The newly-created book's ID field is a valid UUID
 * The newly-created book's publisher has an address containing a known state code
@@ -254,7 +255,7 @@ Describe("Books API", func() {
 ```
 
 Compare the above test code to the following YAML document that a `gdt` user
-might create to describe the same assertion
+might create to describe the same assertions 
 (`examples/books/tests/create-then-get.yaml`):
 
 ```yaml
