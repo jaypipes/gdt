@@ -92,7 +92,7 @@ func respJSON(r *http.Response) string {
     if r == nil {
         return ""
     }
-    if r.Header.Get("content-type") != "application/json" {
+    if !strings.HasPrefix(r.Header.Get("content-type"), "application/json") {
         return ""
     }
     bodyStr, _ := ioutil.ReadAll(r.Body)
@@ -105,7 +105,7 @@ func respText(r *http.Response) string {
     if r == nil {
         return ""
     }
-    if r.Header.Get("content-type") != "text/plain" {
+    if !strings.HasPrefix(r.Header.Get("content-type"), "text/plain") {
         return ""
     }
     bodyStr, _ := ioutil.ReadAll(r.Body)
@@ -170,7 +170,7 @@ var _ = Describe("Books API - GET /books failures", func() {
 The above test code obscures what is being tested by cluttering the test
 assertions with the Golang closures and accessor code. Compare the above with
 how `gdt` would allow the test author to describe the same assertions
-(`examples/books/tests/failures.yaml`):
+(`examples/books/api/tests/failures.yaml`):
 
 ```yaml
 setup:

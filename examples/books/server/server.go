@@ -106,7 +106,6 @@ func getBook(
 	r *http.Request,
 	bookID string,
 ) {
-	c.Log("grabbing book with ID: ", bookID)
 	book := c.GetBook(bookID)
 	if book == nil {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -119,6 +118,19 @@ func getBook(
 }
 
 func listBooks(c *api.Controller, w http.ResponseWriter, r *http.Request) {
+	// Our GET /books endpoint only supports a "sort" parameter
+	params := r.URL.Query()
+	if len(params) > 0 {
+		if _, found := params["sort"]; !found {
+			var msg string
+			for key := range params {
+				msg = fmt.Sprintf("invalid parameter: %s", key)
+				break
+			}
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+	}
 	var lbr api.ListBooksResponse
 	lbr.Books = c.ListBooks()
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")

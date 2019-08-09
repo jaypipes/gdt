@@ -20,7 +20,7 @@ func respJSON(r *http.Response) string {
 	if r == nil {
 		return ""
 	}
-	if r.Header.Get("content-type") != "application/json" {
+	if !strings.HasPrefix(r.Header.Get("content-type"), "application/json") {
 		return ""
 	}
 	bodyStr, _ := ioutil.ReadAll(r.Body)
@@ -33,7 +33,7 @@ func respText(r *http.Response) string {
 	if r == nil {
 		return ""
 	}
-	if r.Header.Get("content-type") != "text/plain" {
+	if !strings.HasPrefix(r.Header.Get("content-type"), "text/plain") {
 		return ""
 	}
 	bodyStr, _ := ioutil.ReadAll(r.Body)
