@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"time"
 
 	"../api"
@@ -36,7 +37,8 @@ func main() {
 	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
 	c := api.NewControllerWithBooks(logger, data)
 	router := http.NewServeMux()
-	router.Handle("/books", books(c))
+	router.Handle("/books/", handleBook(c))
+	router.Handle("/books", handleBooks(c))
 
 	server := &http.Server{
 		Addr:     listenAddr,
@@ -70,18 +72,14 @@ func main() {
 	c.Log("books API server stopped")
 }
 
-func books(c *api.Controller) http.Handler {
+func handleBooks(c *api.Controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
 			postBooks(c, w, r)
 			return
 		case "GET":
-			if r.URL.Path == "/books" {
-				listBooks(c, w, r)
-			} else {
-				// getBook(c, w, r)
-			}
+			listBooks(c, w, r)
 			return
 		}
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
@@ -89,12 +87,43 @@ func books(c *api.Controller) http.Handler {
 	})
 }
 
+func handleBook(c *api.Controller) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			bookID := strings.Replace(r.URL.Path, "/books/", "", 1)
+			getBook(c, w, r, string(bookID))
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	})
+}
+
+func getBook(
+	c *api.Controller,
+	w http.ResponseWriter,
+	r *http.Request,
+	bookID string,
+) {
+	c.Log("grabbing book with ID: ", bookID)
+	book := c.GetBook(bookID)
+	if book == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(book)
+}
+
 func listBooks(c *api.Controller, w http.ResponseWriter, r *http.Request) {
 	var lbr api.ListBooksResponse
 	lbr.Books = c.ListBooks()
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	json.NewEncoder(w).Encode(&lbr)
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&lbr)
 }
 
 func postBooks(c *api.Controller, w http.ResponseWriter, r *http.Request) {

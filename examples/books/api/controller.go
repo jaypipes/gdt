@@ -95,6 +95,10 @@ func (c *Controller) ListBooks() []*Book {
 	return res
 }
 
+func (c *Controller) GetBook(bookID string) *Book {
+	return c.books[bookID]
+}
+
 func (c *Controller) Log(args ...interface{}) {
 	c.logger.Println(args...)
 }
