@@ -10,54 +10,54 @@ Ginkgo objects in a test suite.
 When using Gingkgo, developers create tests for a particular module (say, the
 `books` module) by creating a `books_test.go` file and calling some Ginkgo
 functions in a BDD test style. A sample Ginkgo test might look something like
-this (`examples/books/api/types_test.go`):
+this ([`examples/books/api/types_test.go`](examples/books/api/types_test.go)):
 
 ```go
 package api_test
 
 import (
-	api "."
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+    api "."
+    . "github.com/onsi/ginkgo"
+    . "github.com/onsi/gomega"
 )
 
 var _ = Describe("Books API Types", func() {
-	var (
-		longBook  api.Book
-		shortBook api.Book
-	)
+    var (
+        longBook  api.Book
+        shortBook api.Book
+    )
 
-	BeforeEach(func() {
-		longBook = api.Book{
-			Title: "Les Miserables",
-			Pages: 1488,
-			Author: &api.Author{
-				Name: "Victor Hugo",
-			},
-		}
+    BeforeEach(func() {
+        longBook = api.Book{
+            Title: "Les Miserables",
+            Pages: 1488,
+            Author: &api.Author{
+                Name: "Victor Hugo",
+            },
+        }
 
-		shortBook = api.Book{
-			Title: "Fox In Socks",
-			Pages: 24,
-			Author: &api.Author{
-				Name: "Dr. Seuss",
-			},
-		}
-	})
+        shortBook = api.Book{
+            Title: "Fox In Socks",
+            Pages: 24,
+            Author: &api.Author{
+                Name: "Dr. Seuss",
+            },
+        }
+    })
 
-	Describe("Categorizing book length", func() {
-		Context("With more than 300 pages", func() {
-			It("should be a novel", func() {
-				Expect(longBook.CategoryByLength()).To(Equal("NOVEL"))
-			})
-		})
+    Describe("Categorizing book length", func() {
+        Context("With more than 300 pages", func() {
+            It("should be a novel", func() {
+                Expect(longBook.CategoryByLength()).To(Equal("NOVEL"))
+            })
+        })
 
-		Context("With fewer than 300 pages", func() {
-			It("should be a short story", func() {
-				Expect(shortBook.CategoryByLength()).To(Equal("SHORT STORY"))
-			})
-		})
-	})
+        Context("With fewer than 300 pages", func() {
+            It("should be a short story", func() {
+                Expect(shortBook.CategoryByLength()).To(Equal("SHORT STORY"))
+            })
+        })
+    })
 })
 ```
 
@@ -272,7 +272,9 @@ tests:
  - name: create a new book
    POST: /books
    data:
-     name: Ernest Hemingway
+     title: For Whom The Bell Tolls
+     published_on: 1940-10-21
+     pages: 480
      author_id: $Authors['Ernest Hemingway']['ID']
      publisher_id: $Publishers["Charles Scribner's Sons"]['ID']
    response:
