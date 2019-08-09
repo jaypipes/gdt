@@ -25,4 +25,12 @@ type Book struct {
 	PublishedOn string     `json:"published_on"`
 	Author      *Author    `json:"author"`
 	Publisher   *Publisher `json:"publisher"`
+	Pages       int        `json:"pages"`
+}
+
+func (b *Book) CategoryByLength() string {
+	if b.Pages < 300 {
+		return "SHORT STORY"
+	}
+	return "NOVEL"
 }

@@ -1,8 +1,9 @@
 [
 {
-"id": "1",
+"id": "9780684803357",
 "title": "For Whom The Bell Tolls",
 "published_on": "1940-10-21",
+"pages": 480,
 "author": {
   "name": "Ernest Hemingway",
   "id": "1"
@@ -15,7 +16,7 @@
     "state": "NY",
     "postal_code": "10010",
     "country_code": "US"
-  }
+  },
 }
 }
 ]

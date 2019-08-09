@@ -10,50 +10,54 @@ Ginkgo objects in a test suite.
 When using Gingkgo, developers create tests for a particular module (say, the
 `books` module) by creating a `books_test.go` file and calling some Ginkgo
 functions in a BDD test style. A sample Ginkgo test might look something like
-this:
+this (`examples/books/api/types_test.go`):
 
 ```go
-package books_test
+package api_test
 
 import (
-    . "/path/to/books"
-    . "github.com/onsi/ginkgo"
-    . "github.com/onsi/gomega"
+	api "."
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Book", func() {
-    var (
-        longBook  Book
-        shortBook Book
-    )
+var _ = Describe("Books API Types", func() {
+	var (
+		longBook  api.Book
+		shortBook api.Book
+	)
 
-    BeforeEach(func() {
-        longBook = Book{
-            Title:  "Les Miserables",
-            Author: "Victor Hugo",
-            Pages:  1488,
-        }
+	BeforeEach(func() {
+		longBook = api.Book{
+			Title: "Les Miserables",
+			Pages: 1488,
+			Author: &api.Author{
+				Name: "Victor Hugo",
+			},
+		}
 
-        shortBook = Book{
-            Title:  "Fox In Socks",
-            Author: "Dr. Seuss",
-            Pages:  24,
-        }
-    })
+		shortBook = api.Book{
+			Title: "Fox In Socks",
+			Pages: 24,
+			Author: &api.Author{
+				Name: "Dr. Seuss",
+			},
+		}
+	})
 
-    Describe("Categorizing book length", func() {
-        Context("With more than 300 pages", func() {
-            It("should be a novel", func() {
-                Expect(longBook.CategoryByLength()).To(Equal("NOVEL"))
-            })
-        })
+	Describe("Categorizing book length", func() {
+		Context("With more than 300 pages", func() {
+			It("should be a novel", func() {
+				Expect(longBook.CategoryByLength()).To(Equal("NOVEL"))
+			})
+		})
 
-        Context("With fewer than 300 pages", func() {
-            It("should be a short story", func() {
-                Expect(shortBook.CategoryByLength()).To(Equal("SHORT STORY"))
-            })
-        })
-    })
+		Context("With fewer than 300 pages", func() {
+			It("should be a short story", func() {
+				Expect(shortBook.CategoryByLength()).To(Equal("SHORT STORY"))
+			})
+		})
+	})
 })
 ```
 
@@ -112,9 +116,10 @@ Describe("Books API - GET /books failures", func() {
 })
 ```
 
-The above Ginkgo Golang test code obscures what is being tested. Compare the
-above with how `gdt` would allow the test author to describe the same
-assertions (`examples/books/tests/failures.yaml`):
+The above test code obscures what is being tested by cluttering the test
+assertions with the Golang closures and accessor code. Compare the above with
+how `gdt` would allow the test author to describe the same assertions
+(`examples/books/tests/failures.yaml`):
 
 ```yaml
 fixtures:
@@ -196,7 +201,7 @@ Describe("Books API", func() {
                     PublisherID: publisherID,
                     PublishedOn: "1940-10-21",
                 }
-                payload, err := json.Marshal()
+                payload, err := json.Marshal(&req)
                 if err != nil {
                     Fail("Failed to serialize JSON in setup")
                 }
@@ -208,7 +213,7 @@ Describe("Books API", func() {
             })
 
             It("should return a Location HTTP header", func() {
-                Ω((<-response).Headers).Should(Contain("Location"))
+                Ω((<-response).Headers).Should(HaveKey("Location"))
             })
 
             newBookURL := (<-response).Headers["Location"]
@@ -268,8 +273,8 @@ tests:
    POST: /books
    data:
      name: Ernest Hemingway
-     authorID: $FIXTURES['Authors']['Ernest Hemingway']['ID']
-     publisherID: $FIXTURES['Publishers']["Charles Scribner's Sons"]['ID']
+     author_id: $Authors['Ernest Hemingway']['ID']
+     publisher_id: $Publishers["Charles Scribner's Sons"]['ID']
    response:
      status: 201
      headers:
