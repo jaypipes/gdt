@@ -64,52 +64,103 @@ var _ = Describe("Books API Types", func() {
 
 This is perfectly great for simple unit tests of Golang code. However, once the
 tests begin to call multiple APIs or packages, the Ginkgo Golang tests start to
-get cumbersome:
+get cumbersome. Consider the following example of *functionally* testing the
+failure modes for a simple HTTP REST API endpoint
+([`examples/books/api/failure_test.go`](examples/books/api/failure_test.go)):
 
 
 ```go
-Describe("Books API - GET /books failures", func() {
-    var client APIClient
-    var booksServer BooksServer
-    var response chan APIResponse
+package api_test
+
+import (
+    "io/ioutil"
+    "net/http"
+    "os"
+    "strings"
+
+    . "github.com/onsi/ginkgo"
+    . "github.com/onsi/gomega"
+)
+
+const (
+    defaultAPIServerURL = "http://localhost:8081"
+)
+
+// respJSON returns a string if the supplied HTTP response body is JSON,
+// otherwise the empty string
+func respJSON(r *http.Response) string {
+    if r == nil {
+        return ""
+    }
+    if r.Header.Get("content-type") != "application/json" {
+        return ""
+    }
+    bodyStr, _ := ioutil.ReadAll(r.Body)
+    return string(bodyStr)
+}
+
+// respText returns a string if the supplied HTTP response has a text/plain
+// content type and a body, otherwise the empty string
+func respText(r *http.Response) string {
+    if r == nil {
+        return ""
+    }
+    if r.Header.Get("content-type") != "text/plain" {
+        return ""
+    }
+    bodyStr, _ := ioutil.ReadAll(r.Body)
+    return string(bodyStr)
+}
+
+func apiPath(path string) string {
+    serverURL, found := os.LookupEnv("EXAMPLES_BOOKS_API_SERVER_URL")
+    if !found {
+        serverURL = defaultAPIServerURL
+    }
+    return strings.TrimSuffix(serverURL, "/") + "/" + strings.TrimPrefix(path, "/")
+}
+
+var _ = Describe("Books API - GET /books failures", func() {
+    var response *http.Response
+    var err error
+    var testPath string
 
     BeforeEach(func() {
-        response = make(chan APIResponse, 1)
-        booksServer = NewBookServer()
-        client = NewAPIClient(booksServer)
+        response, err = http.Get(apiPath(testPath))
+        Ω(err).Should(BeZero())
     })
 
     Describe("failure modes", func() {
         AssertZeroJSONLength := func() {
             It("should not include JSON in the response", func() {
-                Ω((<-response).JSON).Should(BeZero())
+                Ω(respJSON(response)).Should(BeZero())
             })
         }
 
         Context("when no such book was found", func() {
-            BeforeEach(func() {
-                client.Get("/books/nosuchbook", response)
+            JustBeforeEach(func() {
+                testPath = "/books/nosuchbook"
             })
 
             AssertZeroJSONLength()
 
             It("should return 404", func() {
-                Ω((<-response).StatusCode).Should(Equal(404))
+                Ω(response.StatusCode).Should(Equal(404))
             })
         })
 
         Context("when an invalid query parameter is supplied", func() {
-            BeforeEach(func() {
-                client.Get("/books?invalidparam=1", response)
+            JustBeforeEach(func() {
+                testPath = "/books?invalidparam=1"
             })
 
             AssertZeroJSONLength()
 
             It("should return 400", func() {
-                Ω((<-response).StatusCode).Should(Equal(400))
+                Ω(response.StatusCode).Should(Equal(400))
             })
             It("should indicate invalid query parameter", func() {
-                Ω((<-response).Body).Should(Contain("invalid parameter"))
+                Ω(respText(response)).Should(ContainSubstring("invalid parameter"))
             })
         })
     })
@@ -122,8 +173,8 @@ how `gdt` would allow the test author to describe the same assertions
 (`examples/books/tests/failures.yaml`):
 
 ```yaml
-fixtures:
- - BooksAPI
+setup:
+ - books_api
 tests:
  - name: no such book was found
    GET: /books/nosuchbook
@@ -264,10 +315,11 @@ might create to describe the same assertions
 (`examples/books/tests/create-then-get.yaml`):
 
 ```yaml
+setup:
+ - books_api
 fixtures:
- - BooksAPI
- - Authors
- - Publishers
+ - authors_by_name
+ - publishers_by_name
 tests:
  - name: create a new book
    POST: /books
@@ -275,8 +327,8 @@ tests:
      title: For Whom The Bell Tolls
      published_on: 1940-10-21
      pages: 480
-     author_id: $Authors['Ernest Hemingway']['ID']
-     publisher_id: $Publishers["Charles Scribner's Sons"]['ID']
+     author_id: $authors_by_name['Ernest Hemingway']['ID']
+     publisher_id: $publishers_by_name["Charles Scribner's Sons"]['ID']
    response:
      status: 201
      headers:
