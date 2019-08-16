@@ -1,13 +1,91 @@
-# `gdt` - The Golang declarative testing framework
+# `gdt` - The Golang Declarative Testing framework
 
-`gdt` is a wrapper around the [`gingko`](http://onsi.github.io/ginkgo/) Golang
-testing library that allows test authors to cleanly describe tests in a YAML
-file. `gdt` reads YAML files that describe a test and automatically creates the
-Ginkgo objects in a test suite.
+`gdt` is a testing library that allows test authors to cleanly describe tests
+in a YAML file. `gdt` reads YAML files that describe a test's assertions and
+then builds a set of Golang structures that the standard Golang
+[`testing`](https://golang.org/pkg/testing/) package can execute.
+
+## Installation
+
+`gdt` is a Golang library and is intended to be included in your own Golang
+application's test code as a Golang package dependency.
+
+Install `gdt` into your `$GOPATH` by executing:
+
+```
+go get -u github.com/jaypipes/gdt
+```
+
+Alternately, include "github.com/jaypipes/gdt" in your Golang dependency
+management of choice.
 
 ## Introduction
 
-When using Gingkgo, developers create tests for a particular module (say, the
+Writing functional tests in Golang can be overly verbose and tedious. When the
+code that functionally tests some part of an application is verbose or tedious,
+then it becomes difficult to read the tests and quickly understand the
+assertions the test is making.
+
+The more difficult it is to understand the test assertions or the test setups
+and assumptions, the greater the chance that the test improperly validates the
+application behaviour. Furthermore, test code that is cumbersome to read is
+prone to bit-rot due to its high maintenance cost. This is particularly true
+for code that verifies an application's integration points with *other*
+applications via an API.
+
+The idea behind `gdt` is to allow test authors to cleanly and clearly describe
+a functional test's assumptions and assertions in a declarative format.
+Separating the *description* of a test's assumptions (setup) and assertions
+from the Golang code that actually performs the test assertions leads to tests
+that are easier to read and understand. This allows developers to spend *more
+time writing code* and less time copy/pasting boilerplate test code. Due to the
+easier test comprehension, `gdt` also encourages writing greater quality and
+coverage of functional tests due to easier test comprehension.
+
+Instead of developers writing code that looks like this:
+
+```go
+var _ = Describe("Books API - GET /books failures", func() {
+    var response *http.Response
+    var err error
+    var testPath = "/books/nosuchbook"
+
+    BeforeEach(func() {
+        response, err = http.Get(apiPath(testPath))
+        Ω(err).Should(BeZero())
+    })
+
+    Describe("failure modes", func() {
+        Context("when no such book was found", func() {
+            It("should not include JSON in the response", func() {
+                Ω(respJSON(response)).Should(BeZero())
+            })
+            It("should return 404", func() {
+                Ω(response.StatusCode).Should(Equal(404))
+            })
+        })
+    })
+})
+```
+
+they can instead have a test that looks like this:
+
+
+```yaml
+setup:
+ - books_api
+tests:
+ - name: no such book was found
+   GET: /books/nosuchbook
+   response:
+     json:
+       length: 0
+     status: 404
+```
+
+## Coming from Ginkgo
+
+When using Ginkgo, developers create tests for a particular module (say, the
 `books` module) by creating a `books_test.go` file and calling some Ginkgo
 functions in a BDD test style. A sample Ginkgo test might look something like
 this ([`examples/books/api/types_test.go`](examples/books/api/types_test.go)):
@@ -199,9 +277,12 @@ The more intricate the assertions being verified by the test, generally the
 more verbose and cumbersome the Golang test code becomes. First and foremost,
 tests should be *readable*. If they are not readable, then the test's
 assertions are not *understandable*. And tests that cannot easily be understood
-are often the source of bit rot and technical debt.
+are often the source of bit rot and technical debt. Worse, tests that aren't
+understandable stand a greater chance of having an improper assertion go
+undiscovered, leading to tests that validate the wrong behaviour or don't
+validate the correct behaviour.
 
-Consider a Ginkgo Golang test case that checks the following behavior:
+Consider a Ginkgo Golang test case that checks the following behaviour:
 
 * When a book is created via a call to `POST /books`, we are able to get book
  information from the link returned in the HTTP response's `Location` header
