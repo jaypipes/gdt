@@ -2,24 +2,12 @@ package http
 
 import (
 	"fmt"
-	"io"
 	"net/http"
+	"strings"
 
 	"github.com/jaypipes/gdt"
 	"github.com/jaypipes/gdt/testcase"
 )
-
-type httpResponseAssertion struct {
-	check func(*http.Response) (bool, string)
-}
-
-func (a *httpResponseAssertion) Assert(w io.Writer) bool {
-	res, failMsg := a.check(a.resp)
-	if !res {
-		w.Write(failMsg)
-	}
-	return res
-}
 
 // HTTPTest implements gdt.Runnable
 type HTTPTest struct {
@@ -27,16 +15,18 @@ type HTTPTest struct {
 	name string
 	// Description of the test (defaults to Name)
 	description string
-	// URL to query
-	url string
+	// Base URL to use for request
+	baseURL string
+	// HTTP request to execute
+	request *http.Request
 	// HTTP Response object to assert on
-	response *http.Response
+	response *response
 	// Specification for expected response
 	assertions []gdt.Assertion
 }
 
-func (t *HTTPTest) AssertZeroJSONLength() {
-	t.assertions = append(t.assertions, httpResponseAssertion{assertZeroJSONLength(t.response)})
+func (t *HTTPTest) requestURL() string {
+	return t.baseURL + "/" + strings.TrimPrefix(t.path, "/")
 }
 
 func assertZeroJSONLength(resp *http.Response) func(*http.Response) (bool, string) {
@@ -65,7 +55,7 @@ func (t *HTTPTest) Run() gdt.RunResult {
 	}
 }
 
-func NewTestCaseFromYAML(contents string, opts ...gdt.WithOption) *gdt.TestCase {
+func NewFromYAML(contents string, opts ...gdt.WithOption) *gdt.TestCase {
 	tcs, err := parseYAML(contents)
 	if err != nil {
 		return nil, err
@@ -75,14 +65,26 @@ func NewTestCaseFromYAML(contents string, opts ...gdt.WithOption) *gdt.TestCase 
 		opts = append(opts, gdt.WithName(tcs.Name))
 	}
 	if tcs.Description != "" {
-		opts = append(opts, gdt.WithName(tcs.Description))
+		opts = append(opts, gdt.WithDescription(tcs.Description))
 	}
 
 	tc := testcase.New(opts...)
-	for _, tspec := range ht.TestSpecs {
-		r := HTTPTest{
+	for _, tspec := range tcs.TestSpecs {
+		ht := HTTPTest{
 			name: tspec.Name,
-			url:  tspec.GET,
+		}
+
+		if tspec.URL == "" {
+			if tspec.GET != "" {
+				ht.request = http.Request(URL: tspec.GET, Method: "GET")
+			}
+		
+		} else {
+			method := tspec.Method
+			if method == "" {
+				return nil, fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
+			}
+
 		}
 
 		if tspec.Response != nil {

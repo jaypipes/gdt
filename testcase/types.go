@@ -1,25 +1,9 @@
 package testcase
 
-import (
-	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
-	"os"
-)
-
 type RunResult struct {
 	Succeeded bool
-	Skipped bool
-	Errors []error
-}
-
-type Runnable interface {
-	func Run() RunResult
-}
-
-type Assertion interface {
-	func Assert(w io.Writer) bool
+	Skipped   bool
+	Errors    []error
 }
 
 type TestCaseType uint
@@ -30,15 +14,18 @@ const (
 
 type TestCase struct {
 	// Type of test case this test has
-	TestCaseType TestCaseType `json:"type"`
+	TestCaseType TestCaseType
 	// Filepath is the filepath to the test file
-	Filepath string `json:"filepath"`
+	Filepath string
 	// Name for the overall test
-	Name string `json:"name"`
+	Name string
 	// Description of the test (defaults to Name)
-	Description string `json:"description"`
+	Description string
 	// Tests that may be run for this test case
-	Tests []Runnable string `json:"tests"`
+	Tests []gdt.Runnable
+	// Fixtures provide extensible setup and teardown of resources used in the
+	// test case's tests
+	Fixtures []gdt.Fixture
 }
 
 func (tc *TestCase) AppendRunnable(r Runnable) {

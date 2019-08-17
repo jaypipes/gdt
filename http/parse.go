@@ -24,11 +24,9 @@ type testSpec struct {
 	// HTTP Method specified by HTTP client
 	Method string `json:"method"`
 	// Shortcut for URL and Method of "GET"
-	GET string
+	GET string `json:"GET"`
 	// Shortcut for URL and Method of "POST"
-	POST string
-	// HTTP request object constructed from spec
-	Request *http.Request
+	POST string `json:"POST"`
 	// Specification for expected response
 	Response *HTTPResponseAssertion `json:"response"`
 }

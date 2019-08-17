@@ -11,8 +11,18 @@ import (
 	gdt_http "github.com/jaypipes/gdt/http"
 )
 
-type testCaseTypeProber struct {
+type fixtureSpec struct {
+	Name string
+	Args []string
+}
+
+type setupSpec struct {
+	Fixtures map[string]*fixtureSpec
+}
+
+type testCaseSpec struct {
 	Type string `json:"type"`
+	Setup setupSpec `json:"setup"`
 }
 
 // FromFile reads a GDT test from the supplied filepath and returns a
@@ -31,7 +41,7 @@ func FromFile(fp string, opts ...gdt.WithOption) *gdt.TestCase, error {
 	if err != nil {
 		return nil, err
 	}
-	tp := testTypeProber{}
+	tp := testTypeSpec{}
 	if err = yaml.Unmarshal(contents, &tp); err != nil {
 		return nil, err
 	}
@@ -39,7 +49,7 @@ func FromFile(fp string, opts ...gdt.WithOption) *gdt.TestCase, error {
 	switch tp.Type {
 	case "http", "":
 		{
-			tc, err := gdt_http.NewTestCaseFromYAML(contents)
+			tc, err := gdt_http.NewFromYAML(contents)
 			if err != nil {
 				return nil, err
 			}
