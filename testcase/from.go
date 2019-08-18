@@ -1,14 +1,12 @@
 package testcase
 
 import (
-	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/ghodss/yaml"
 
-	gdt_http "github.com/jaypipes/gdt/http"
+	gdt_http "./http"
 )
 
 type fixtureSpec struct {
@@ -20,14 +18,19 @@ type setupSpec struct {
 	Fixtures map[string]*fixtureSpec
 }
 
-type testCaseSpec struct {
-	Type string `json:"type"`
-	Setup setupSpec `json:"setup"`
+type testcaseSpec struct {
+	Type        string    `json:"type"`
+	Name        string    `json:"name",omitempty`
+	Description string    `json:"description",omitempty`
+	Setup       setupSpec `json:"setup"`
 }
 
-// FromFile reads a GDT test from the supplied filepath and returns a
-// gdt.TestCase describing the test
-func FromFile(fp string, opts ...gdt.WithOption) *gdt.TestCase, error {
+// From parses a gdt YAML file and populates the Testcase with appropriate
+// attributes
+func (tc *Testcase) From(fp string) (*Testcase, error) {
+	if tc == nil {
+		return nil, ErrNilTestcase
+	}
 	// We do a double-parse of the test file. The first pass determines the
 	// type of test by simply looking for a "type" top-level element in the
 	// YAML. If no "type" element was found, the test type defaults to HTTP.
@@ -41,15 +44,25 @@ func FromFile(fp string, opts ...gdt.WithOption) *gdt.TestCase, error {
 	if err != nil {
 		return nil, err
 	}
-	tp := testTypeSpec{}
-	if err = yaml.Unmarshal(contents, &tp); err != nil {
+	tcs := testcaseSpec{}
+	if err = yaml.Unmarshal(contents, &tcs); err != nil {
 		return nil, err
+	}
+
+	// The Testcase may have already had its attributes set using WithOption.
+	// Those values are overrides and should not be replaced by any value read
+	// from the test file
+	if tc.Name == "" && tcs.Name != "" {
+		tc.Name = tcs.Name
+	}
+	if tc.Description == "" && tcs.Description != "" {
+		tc.Description = tcs.Description
 	}
 
 	switch tp.Type {
 	case "http", "":
 		{
-			tc, err := gdt_http.NewFromYAML(contents)
+			err := gdt_http.Parse(tc, contents)
 			if err != nil {
 				return nil, err
 			}

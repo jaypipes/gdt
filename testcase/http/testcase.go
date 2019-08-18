@@ -1,15 +1,16 @@
 package http
 
 import (
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
-	"github.com/jaypipes/gdt"
-	"github.com/jaypipes/gdt/testcase"
+	"../../testcase"
 )
 
-// HTTPTest implements gdt.Runnable
+// HTTPTest implements testcase.Runnable
 type HTTPTest struct {
 	// Name for the individual HTTP call test
 	name string
@@ -22,92 +23,82 @@ type HTTPTest struct {
 	// HTTP Response object to assert on
 	response *response
 	// Specification for expected response
-	assertions []gdt.Assertion
+	assertions []testcase.Assertion
 }
 
-func (t *HTTPTest) requestURL() string {
-	return t.baseURL + "/" + strings.TrimPrefix(t.path, "/")
+func (t *HTTPTest) requestURL(path string) string {
+	return t.baseURL + "/" + strings.TrimPrefix(path, "/")
 }
 
-func assertZeroJSONLength(resp *http.Response) func(*http.Response) (bool, string) {
-	return func(resp *http.Response) (bool, string) {
-		res := respJSON(resp)
-		if res != "" {
-			return false, fmt.Sprintf("Expected HTTP response to have no JSON but found %s", res)
-		}
-		return true, ""
-	}
+type httpAssertion struct {
+	test       *HTTPTest
+	comparator func(r *response) (bool, string)
 }
 
-func (t *HTTPTest) Run() gdt.RunResult {
+func (ha httpAssertion) Assert() (bool, string) {
+	return comparator(t.response)
+}
+
+func (t *HTTPTest) assertJSONLength(exp int) {
+	t.assertions = append(t.assertions, httpAssertion{
+		test: t,
+		comparator: func(r *response) (bool, string) {
+			got := r.JSON()
+			if len(got) != exp {
+				return false, fmt.Sprintf("Expected HTTP response to have JSON length of %d but got %d", exp, len(got))
+			}
+			return true, ""
+		},
+	})
+}
+
+func (t *HTTPTest) assertStatusCode(exp int) {
+	t.assertions = append(t.assertions, httpAssertion{
+		test: t,
+		comparator: func(r *response) (bool, string) {
+			got := r.StatusCode
+			if got != exp {
+				return false, fmt.Sprintf("Expected HTTP response to have status code of %d but got %d", exp, got)
+			}
+			return true, ""
+		},
+	})
+}
+
+func (t *HTTPTest) assertStringIn(exp string) {
+	t.assertions = append(t.assertions, httpAssertion{
+		test: t,
+		comparator: func(r *response) (bool, string) {
+			got := r.Text()
+			if strings.Contains(got, exp) {
+				return false, fmt.Sprintf("Expected HTTP response to contain %s", exp)
+			}
+			return true, ""
+		},
+	})
+}
+
+func (t *HTTPTest) Run(_, _ io.Writer) testcase.RunResult {
 	succeeded := true
 	skipped := false
 	errs := make([]error, 0)
-	t.response, err = http.Get(apiPath(t.url))
-
-	for a := range t.assertions {
-		succeeded &= a.Assert()
+	c := http.DefaultClient
+	resp, err := c.Do(t.request)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		t.response = response{resp}
+		for a := range t.assertions {
+			ok, failStr := a.Assert()
+			succeeded &= ok
+			if !ok && failStr != "" {
+				errs = append(errs, errors.New(failStr))
+			}
+		}
 	}
-	return gdt.RunResult{
+	return testcase.RunResult{
 		Succeeded: succeeded,
 		Skipped:   skipped,
 		Errors:    errs,
-	}
-}
-
-func NewFromYAML(contents string, opts ...gdt.WithOption) *gdt.TestCase {
-	tcs, err := parseYAML(contents)
-	if err != nil {
-		return nil, err
-	}
-
-	if tcs.Name != "" {
-		opts = append(opts, gdt.WithName(tcs.Name))
-	}
-	if tcs.Description != "" {
-		opts = append(opts, gdt.WithDescription(tcs.Description))
-	}
-
-	tc := testcase.New(opts...)
-	for _, tspec := range tcs.TestSpecs {
-		ht := HTTPTest{
-			name: tspec.Name,
-		}
-
-		if tspec.URL == "" {
-			if tspec.GET != "" {
-				ht.request = http.Request(URL: tspec.GET, Method: "GET")
-			}
-		
-		} else {
-			method := tspec.Method
-			if method == "" {
-				return nil, fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
-			}
-
-		}
-
-		if tspec.Response != nil {
-			rspec := tspec.Response
-			if rspec.JSON != nil {
-				if rspec.JSON.Length == 0 {
-					r.AssertZeroJSONLength()
-				}
-			}
-
-			if rspec.Status != 0 {
-				It(fmt.Sprintf("should return %d", rspec.Status), func() {
-					Ω(response.StatusCode).Should(Equal(rspec.Status))
-				})
-			}
-
-			if len(rspec.Strings) > 0 {
-				for _, expStr := range rspec.Strings {
-					It(fmt.Sprintf("should contain '%s'", expStr), func() {
-						Ω(respText(response)).Should(ContainSubstring(expStr))
-					})
-				}
-			}
-		}
 	}
 }
