@@ -1,9 +1,5 @@
 package testcase
 
-import (
-	"github.com/jaypipes/gdt"
-)
-
 // NewTestCase returns a new `gdt.TestCase` for an HTTP test case. The function
 // accepts zero or more `gdt.WithOption` values that affect the returned test
 // case.
@@ -11,10 +7,10 @@ import (
 // Usage:
 //
 //   tc := gdt.NewTestCase(gdt.WithName("books_api"))
-func New(opts ...gdt.WithOption) *gdt.TestCase {
-	useOpts := gdt.MergeOptions(opts...)
-	t := &gdt.TestCase{
-		TestCaseType: gdt.TestCaseTypeHTTP,
+func New(opts ...WithOption) *gdt.TestCase {
+	useOpts := mergeOptions(opts...)
+	t := &TestCase{
+		TestCaseType: TestCaseTypeHTTP,
 	}
 	if useOpts.Name != "" {
 		t.Name = useOpts.Name

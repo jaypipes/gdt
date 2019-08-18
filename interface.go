@@ -1,10 +1,10 @@
 package gdt
 
 type Runnable interface {
-	func Run() RunResult
+	RunResult()
 }
 
 type Fixture interface {
-    func Start()
-    func Stop()
+	Start()
+	Stop()
 }

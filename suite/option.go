@@ -1,26 +1,26 @@
-package testcase
+package suite
 
-// WithOption contains attributes describing a Testcase
+// WithOption contains attributes describing a Suite
 type WithOption struct {
 	Name        string
 	Description string
 	Filepath    string
 }
 
-// WithName returns a WithOption that modifies a constructor for the Testcase
-// with a Name attribute
+// WithName returns a WithOption that modifies a constructor for the Suite with
+// a Name attribute
 func WithName(name string) WithOption {
 	return WithOption{Name: name}
 }
 
 // WithDescription returns a WithOption that modifies a constructor for the
-// Testcase with a Description attribute
+// Suite with a Description attribute
 func WithDescription(desc string) WithOption {
 	return WithOption{Description: desc}
 }
 
 // WithFilepath returns a WithOption that modifies a constructor for the
-// Testcase with a Filepath attribute
+// Suite with a Filepath attribute
 func WithFilepath(fp string) WithOption {
 	return WithOption{Filepath: fp}
 }
