@@ -1,4 +1,4 @@
-package testcase
+package interfaces
 
 // Assertion is used by the test framework to generalize a thing that asserts
 // some truth value

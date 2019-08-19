@@ -2,12 +2,12 @@ package http
 
 import (
 	"io/ioutil"
-	"net/http"
+	nethttp "net/http"
 	"strings"
 )
 
 type response struct {
-	*http.Response
+	*nethttp.Response
 }
 
 // JSON returns a string if the supplied HTTP response body is JSON,

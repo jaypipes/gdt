@@ -3,8 +3,11 @@ package http
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/ghodss/yaml"
+
+	"github.com/jaypipes/gdt/interfaces"
 )
 
 type jsonAssertion struct {
@@ -38,50 +41,59 @@ type testcaseSpec struct {
 	Specs []*testSpec `json:"tests"`
 }
 
+type httpParser struct{}
+
 // Parse accepts a Testcase and a string of YAML contents from a gdt test file.
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
-func Parse(tc *test.Testcase, contents string) error {
+func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
+	var err error
 	tcs := testcaseSpec{}
 	if err := yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
-	for _, tspec := range tcs.TestSpecs {
-		ht := HTTPTest{
+	for _, tspec := range tcs.Specs {
+		tu := testUnit{
 			name: tspec.Name,
 		}
 
 		if tspec.URL == "" {
 			if tspec.GET != "" {
-				ht.request = http.NewRequest(tspec.GET, "GET")
+				tu.request, err = http.NewRequest("GET", tspec.GET, strings.NewReader(""))
+				if err != nil {
+					return err
+				}
 			}
 		} else {
 			method := tspec.Method
 			if method == "" {
-				return nil, fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
+				return fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
 			}
-			ht.request = http.NewRequest(tspec.URL, method)
+			tu.request, err = http.NewRequest(method, tspec.URL, strings.NewReader(""))
+			if err != nil {
+				return err
+			}
 		}
 
 		if tspec.Response != nil {
 			rspec := tspec.Response
 			if rspec.JSON != nil {
 				if rspec.JSON.Length != nil {
-					ht.assertJSONLength(*rspec.JSON.Length)
+					tu.assertJSONLength(*(rspec.JSON.Length))
 				}
 			}
 
 			if rspec.Status != nil {
-				ht.assertStatusCode(*rspec.Status)
+				tu.assertStatusCode(*(rspec.Status))
 			}
 
 			if len(rspec.Strings) > 0 {
 				for _, exp := range rspec.Strings {
-					ht.assertStringIn(exp)
+					tu.assertStringIn(exp)
 				}
 			}
 		}
-		tc.AppendRunnable(&ht)
+		tc.AppendRunnable(&tu)
 	}
 	return nil
 }

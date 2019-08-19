@@ -3,10 +3,12 @@ package testcase
 import (
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/ghodss/yaml"
 
-	gdt_http "./http"
+	gdterrors "github.com/jaypipes/gdt/errors"
+	"github.com/jaypipes/gdt/interfaces"
 )
 
 type fixtureSpec struct {
@@ -19,17 +21,19 @@ type setupSpec struct {
 }
 
 type testcaseSpec struct {
-	Type        string    `json:"type"`
-	Name        string    `json:"name",omitempty`
-	Description string    `json:"description",omitempty`
-	Setup       setupSpec `json:"setup"`
+	Type        string   `json:"type"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Setup       []string `json:"setup"`
 }
 
 // From parses a gdt YAML file and populates the Testcase with appropriate
 // attributes
-func (tc *Testcase) From(fp string) (*Testcase, error) {
+func (tc *testcase) From(
+	fp string,
+) (interfaces.Testcase, []byte, error) {
 	if tc == nil {
-		return nil, ErrNilTestcase
+		return nil, nil, gdterrors.ErrNilTestcase
 	}
 	// We do a double-parse of the test file. The first pass determines the
 	// type of test by simply looking for a "type" top-level element in the
@@ -38,35 +42,27 @@ func (tc *Testcase) From(fp string) (*Testcase, error) {
 	// is called to parse the file into the case type-specific schema
 	f, err := os.Open(fp)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	contents, err := ioutil.ReadAll(f)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	tcs := testcaseSpec{}
 	if err = yaml.Unmarshal(contents, &tcs); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// The Testcase may have already had its attributes set using WithOption.
 	// Those values are overrides and should not be replaced by any value read
 	// from the test file
-	if tc.Name == "" && tcs.Name != "" {
-		tc.Name = tcs.Name
+	if tc.name == "" && tcs.Name != "" {
+		tc.name = tcs.Name
 	}
-	if tc.Description == "" && tcs.Description != "" {
-		tc.Description = tcs.Description
+	if tc.description == "" && tcs.Description != "" {
+		tc.description = tcs.Description
 	}
 
-	switch tp.Type {
-	case "http", "":
-		{
-			err := gdt_http.Parse(tc, contents)
-			if err != nil {
-				return nil, err
-			}
-			return tc, nil
-		}
-	}
+	tc.typ = strings.ToLower(tcs.Type)
+	return tc, contents, nil
 }

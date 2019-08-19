@@ -1,19 +1,18 @@
 package api_test
 
 import (
+	"fmt"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
-	gdt "../../../.."
+	"github.com/jaypipes/gdt"
+	_ "github.com/jaypipes/gdt/http"
 )
 
 func TestBooksAPI(t *testing.T) {
-	RegisterFailHandler(Fail)
-	err := gdt.TestFromFile("failures.yaml")
+	tc, err := gdt.FromFile("failures.yaml")
 	if err != nil {
 		panic(err)
 	}
-	RunSpecs(t, "Books API Suite")
+	res := tc.Run(nil, nil)
+	fmt.Println(res)
 }

@@ -398,7 +398,6 @@ might create to describe the same assertions
 ```yaml
 setup:
  - books_api
-fixtures:
  - authors_by_name
  - publishers_by_name
 tests:

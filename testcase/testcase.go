@@ -1,59 +1,55 @@
 package testcase
 
 import (
-	"errors"
 	"io"
+
+	"github.com/jaypipes/gdt/interfaces"
 )
 
-// Type of test case
-type Type uint
-
-const (
-	// TypeHTTP describes tests of HTTP APIs
-	TypeHTTP Type = iota
-)
-
-var (
-	// ErrNilTestcase is returned when attempting to call a Testcase method
-	// with a nil Testcase pointer
-	ErrNilTestcase = errors.New("nil testcase")
-)
-
-// RunResult is what is returned from a Runnable
-type RunResult struct {
-	Succeeded bool
-	Skipped   bool
-	Errors    []error
-}
-
-// Runnable describes the interface that a Testcase runs
-type Runnable interface {
-	// Run takes two io.Writers, one for the normal output stream, the other
-	// for the error stream, and returns a RunResult
-	Run(ow, ew io.Writer) RunResult
-}
-
-// Testcase describes the tests in a single gdt test file
-type Testcase struct {
-	// Type of test case this test has
-	Type Type
-	// Filepath is the filepath to the test file
-	Filepath string
-	// Name for the overall test
-	Name string
-	// Description of the test (defaults to Name)
-	Description string
-	// Tests that may be run for this test case
-	Tests []Runnable
-	// Fixtures provide extensible setup and teardown of resources used in the
-	// test case's tests
-	Fixtures []struct{}
+// Testcase describes the tests in a single gdt test file. Implements
+// interfaces.Testcase
+type testcase struct {
+	// typ is the type of test case
+	typ string
+	// filepath is the filepath to the test file
+	filepath string
+	// name for the overall test
+	name string
+	// description of the test (defaults to name)
+	description string
+	// tests that may be run for this test case
+	tests []interfaces.Runnable
 }
 
 // AppendRunnable appends a Runnable thing to the test case's list of Runnable
 // things
-func (tc *Testcase) AppendRunnable(r Runnable) {
-	tc.Tests = append(tc.Tests, r)
+func (tc *testcase) AppendRunnable(r interfaces.Runnable) {
+	tc.tests = append(tc.tests, r)
+}
+
+// Type returns the test case's type, e.g. "http"
+func (tc *testcase) Type() string {
+	return tc.typ
+}
+
+// Filepath returns the test case's absolute filepath
+func (tc *testcase) Filepath() string {
+	return tc.filepath
+}
+
+// Name returns a name for the test case
+func (tc *testcase) Name() string {
+	return tc.name
+}
+
+// Describe returns a description or name for the test case
+func (tc *testcase) Describe() string {
+	return tc.description
+}
+
+// SetDescription sets the test case's longer description
+func (tc *testcase) SetDescription(description string) {
+	tc.description = description
 }
 
 // New returns a new `Testcase` for an HTTP test case. The function
@@ -62,29 +58,48 @@ func (tc *Testcase) AppendRunnable(r Runnable) {
 //
 // Usage:
 //
-//   tc := testcase.New(testcase.WithName("books_api"))
-func New(opts ...WithOption) *Testcase {
+//   tc := testcase.New(testcase.Withname("books_api"))
+func New(opts ...WithOption) *testcase {
 	useOpts := mergeOptions(opts...)
-	t := &Testcase{
-		Type: TypeHTTP,
-	}
+	t := &testcase{}
 	if useOpts.Description != "" {
-		t.Description = useOpts.Description
-	}
-	if useOpts.Filepath != "" {
-		t.Filepath = useOpts.Filepath
+		t.description = useOpts.Description
 	}
 	if useOpts.Name != "" {
-		t.Name = useOpts.Name
+		t.name = useOpts.Name
 	}
 	return t
 }
 
+// runResult implements interfaces.RunResult
+type runResult struct {
+	succeeded bool
+	skipped   bool
+	errors    []error
+}
+
+func (r *runResult) OK() bool {
+	return r.succeeded
+}
+
+func (r *runResult) Skipped() bool {
+	return r.skipped
+}
+
+func (r *runResult) Errors() []error {
+	return r.errors
+}
+
 // Run executes the elements of the Testcase
-func (tc *Testcase) Run(ow, ew io.Writer) []RunResult {
-	results := make([]RunResult, len(tc.Tests))
-	for x, r := range tc.Tests {
-		res[x] = r.Run(ow, ew)
+func (tc *testcase) Run(ow, ew io.Writer) interfaces.RunResult {
+	merged := &runResult{
+		succeeded: true,
+		skipped:   false,
+		errors:    []error{},
 	}
-	return results
+	for _, r := range tc.tests {
+		res := r.Run(ow, ew)
+		merged.succeeded = merged.succeeded && res.OK()
+	}
+	return merged
 }

@@ -23,7 +23,7 @@ func WithDescription(desc string) WithOption {
 // values
 func mergeOptions(opts ...WithOption) WithOption {
 	res := WithOption{}
-	for opt := range opts {
+	for _, opt := range opts {
 		if opt.Name != "" {
 			res.Name = opt.Name
 		}
