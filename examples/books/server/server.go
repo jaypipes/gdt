@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"../api"
+	"github.com/jaypipes/gdt/examples/books/api"
 )
 
 var (

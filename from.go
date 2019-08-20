@@ -1,6 +1,8 @@
 package gdt
 
 import (
+	"testing"
+
 	gdterrors "github.com/jaypipes/gdt/errors"
 	"github.com/jaypipes/gdt/interfaces"
 	"github.com/jaypipes/gdt/testcase"
@@ -8,8 +10,8 @@ import (
 
 // FromFile returns a Testcase after reading a supplied filepath and parsing
 // the file
-func FromFile(fp string) (interfaces.Testcase, error) {
-	tc, contents, err := testcase.New().From(fp)
+func FromFile(t *testing.T, fp string) (interfaces.Testcase, error) {
+	tc, contents, err := testcase.New(t).From(fp)
 	if err != nil {
 		return nil, err
 	}

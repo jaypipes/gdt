@@ -3,9 +3,11 @@ package http
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	nethttp "net/http"
+	"testing"
 
 	"github.com/ghodss/yaml"
+	"github.com/stretchr/testify/require"
 
 	"github.com/jaypipes/gdt/interfaces"
 )
@@ -54,12 +56,12 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 	}
 	for _, tspec := range tcs.Specs {
 		tu := testUnit{
+			t:    tc.T(),
 			name: tspec.Name,
 		}
-
 		if tspec.URL == "" {
 			if tspec.GET != "" {
-				tu.request, err = http.NewRequest("GET", tspec.GET, strings.NewReader(""))
+				tu.request, err = http.NewRequest("GET", "http://localhost:8081"+tspec.GET, nil)
 				if err != nil {
 					return err
 				}
@@ -69,31 +71,35 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 			if method == "" {
 				return fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
 			}
-			tu.request, err = http.NewRequest(method, tspec.URL, strings.NewReader(""))
+			tu.request, err = http.NewRequest(method, tspec.URL, nil)
 			if err != nil {
 				return err
 			}
 		}
+		c := nethttp.DefaultClient
+		resp, _ := c.Do(tu.request)
+		tu.response = &response{resp}
+		require.NotNil(tu.t, resp, tu.request)
+		tu.t.Run(tspec.Name, func(t *testing.T) {
+			if tspec.Response != nil {
+				rspec := tspec.Response
+				if rspec.JSON != nil {
+					if rspec.JSON.Length != nil {
+						tu.assertJSONLength(*(rspec.JSON.Length))
+					}
+				}
 
-		if tspec.Response != nil {
-			rspec := tspec.Response
-			if rspec.JSON != nil {
-				if rspec.JSON.Length != nil {
-					tu.assertJSONLength(*(rspec.JSON.Length))
+				if rspec.Status != nil {
+					tu.assertStatusCode(*(rspec.Status))
+				}
+
+				if len(rspec.Strings) > 0 {
+					for _, exp := range rspec.Strings {
+						tu.assertStringIn(exp)
+					}
 				}
 			}
-
-			if rspec.Status != nil {
-				tu.assertStatusCode(*(rspec.Status))
-			}
-
-			if len(rspec.Strings) > 0 {
-				for _, exp := range rspec.Strings {
-					tu.assertStringIn(exp)
-				}
-			}
-		}
-		tc.AppendRunnable(&tu)
+		})
 	}
 	return nil
 }

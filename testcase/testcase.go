@@ -1,14 +1,13 @@
 package testcase
 
 import (
-	"io"
-
-	"github.com/jaypipes/gdt/interfaces"
+	"testing"
 )
 
 // Testcase describes the tests in a single gdt test file. Implements
-// interfaces.Testcase
+// interfaces.Testcase and wraps the testing.T struct
 type testcase struct {
+	t *testing.T
 	// typ is the type of test case
 	typ string
 	// filepath is the filepath to the test file
@@ -17,14 +16,11 @@ type testcase struct {
 	name string
 	// description of the test (defaults to name)
 	description string
-	// tests that may be run for this test case
-	tests []interfaces.Runnable
 }
 
-// AppendRunnable appends a Runnable thing to the test case's list of Runnable
-// things
-func (tc *testcase) AppendRunnable(r interfaces.Runnable) {
-	tc.tests = append(tc.tests, r)
+// T returns a pointer to the testing.T
+func (tc *testcase) T() *testing.T {
+	return tc.t
 }
 
 // Type returns the test case's type, e.g. "http"
@@ -47,11 +43,6 @@ func (tc *testcase) Describe() string {
 	return tc.description
 }
 
-// SetDescription sets the test case's longer description
-func (tc *testcase) SetDescription(description string) {
-	tc.description = description
-}
-
 // New returns a new `Testcase` for an HTTP test case. The function
 // accepts zero or more `WithOption` values that affect the returned test
 // case.
@@ -59,47 +50,14 @@ func (tc *testcase) SetDescription(description string) {
 // Usage:
 //
 //   tc := testcase.New(testcase.Withname("books_api"))
-func New(opts ...WithOption) *testcase {
+func New(t *testing.T, opts ...WithOption) *testcase {
 	useOpts := mergeOptions(opts...)
-	t := &testcase{}
+	tc := &testcase{t: t}
 	if useOpts.Description != "" {
-		t.description = useOpts.Description
+		tc.description = useOpts.Description
 	}
 	if useOpts.Name != "" {
-		t.name = useOpts.Name
+		tc.name = useOpts.Name
 	}
-	return t
-}
-
-// runResult implements interfaces.RunResult
-type runResult struct {
-	succeeded bool
-	skipped   bool
-	errors    []error
-}
-
-func (r *runResult) OK() bool {
-	return r.succeeded
-}
-
-func (r *runResult) Skipped() bool {
-	return r.skipped
-}
-
-func (r *runResult) Errors() []error {
-	return r.errors
-}
-
-// Run executes the elements of the Testcase
-func (tc *testcase) Run(ow, ew io.Writer) interfaces.RunResult {
-	merged := &runResult{
-		succeeded: true,
-		skipped:   false,
-		errors:    []error{},
-	}
-	for _, r := range tc.tests {
-		res := r.Run(ow, ew)
-		merged.succeeded = merged.succeeded && res.OK()
-	}
-	return merged
+	return tc
 }
