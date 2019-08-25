@@ -54,9 +54,11 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 	if err := yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
+	t := tc.T()
+	t.Helper()
 	for _, tspec := range tcs.Specs {
 		tu := testUnit{
-			t:    tc.T(),
+			t:    t,
 			name: tspec.Name,
 		}
 		if tspec.URL == "" {

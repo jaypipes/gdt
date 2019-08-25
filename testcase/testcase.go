@@ -16,6 +16,9 @@ type testcase struct {
 	name string
 	// description of the test (defaults to name)
 	description string
+	// set of fixture names and args to associate with the testcase's
+	// before-run stage
+	before map[string][]string
 }
 
 // T returns a pointer to the testing.T
