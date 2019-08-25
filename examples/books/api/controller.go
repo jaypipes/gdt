@@ -1,8 +1,11 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
+	"strings"
 	"sync"
 )
 
@@ -60,6 +63,112 @@ func NewControllerWithBooks(logger *log.Logger, data []*Book) *Controller {
 		publishers: publishers,
 		books:      books,
 	}
+}
+
+func (c *Controller) Router() http.Handler {
+	router := http.NewServeMux()
+	router.Handle("/books/", handleBook(c))
+	router.Handle("/books", handleBooks(c))
+	return router
+}
+
+func handleBooks(c *Controller) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "POST":
+			postBooks(c, w, r)
+			return
+		case "GET":
+			listBooks(c, w, r)
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	})
+}
+
+func handleBook(c *Controller) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case "GET":
+			bookID := strings.Replace(r.URL.Path, "/books/", "", 1)
+			getBook(c, w, r, string(bookID))
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	})
+}
+
+func getBook(
+	c *Controller,
+	w http.ResponseWriter,
+	r *http.Request,
+	bookID string,
+) {
+	book := c.GetBook(bookID)
+	if book == nil {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(book)
+}
+
+func listBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+	// Our GET /books endpoint only supports a "sort" parameter
+	params := r.URL.Query()
+	if len(params) > 0 {
+		if _, found := params["sort"]; !found {
+			var msg string
+			for key := range params {
+				msg = fmt.Sprintf("invalid parameter: %s", key)
+				break
+			}
+			http.Error(w, msg, http.StatusBadRequest)
+			return
+		}
+	}
+	var lbr ListBooksResponse
+	lbr.Books = c.ListBooks()
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&lbr)
+}
+
+func postBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/books" {
+		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		return
+	}
+	decoder := json.NewDecoder(r.Body)
+	var cbr CreateBookRequest
+	err := decoder.Decode(&cbr)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(422)
+		if err := json.NewEncoder(w).Encode(err); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	createdID, err := c.CreateBook(&cbr)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(400)
+		if err := json.NewEncoder(w).Encode(err); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	locURL := fmt.Sprintf("/books/%s", createdID)
+	w.Header().Set("Location", locURL)
+	w.WriteHeader(http.StatusCreated)
 }
 
 func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
