@@ -1,10 +1,12 @@
 package http
 
 import (
+	"net/http"
 	nethttp "net/http"
 	"strings"
 	"testing"
 
+	"github.com/jaypipes/gdt/interfaces"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -12,12 +14,18 @@ import (
 // testUnit implements interfaces.Runnable
 type testUnit struct {
 	t *testing.T
+	// fixture registry associated with the test unit's test case
+	fr interfaces.FixtureRegistry
 	// Name for the individual HTTP call test
 	name string
 	// Description of the test (defaults to Name)
 	description string
 	// Base URL to use for request
 	baseURL string
+	// URL being called by HTTP client
+	URL string `json:"url"`
+	// HTTP Method specified by HTTP client
+	Method string `json:"method"`
 	// HTTP request to execute
 	request *nethttp.Request
 	// HTTP Response object to assert on
@@ -42,11 +50,15 @@ func (tu *testUnit) Describe() string {
 }
 
 // Run executes the test described by the test unit
-func (tu *testUnit) Run() {
+func (tu *testUnit) RunWithFixtures(fr interfaces.FixtureRegistry) {
+	var err error
+	baseURL := fr.Get("books_api").State("URL")
+	tu.request, err = http.NewRequest(tu.Method, baseURL+tu.URL, nil)
+	require.Nil(tu.t, err)
 	c := nethttp.DefaultClient
 	resp, _ := c.Do(tu.request)
 	tu.response = &response{resp}
-	require.NotNil(tu.t, resp, tu.request)
+	require.NotNil(tu.t, resp, "Expected nil net/http:Response but got nil")
 	tu.t.Run(tu.name, func(t *testing.T) {
 		if tu.responseAssertion != nil {
 			rspec := tu.responseAssertion

@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"fmt"
 	"log"
 	"net/http/httptest"
 	"os"
@@ -20,15 +21,21 @@ func (f *booksAPIFixture) Start() {
 	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
 	c := api.NewControllerWithBooks(logger, nil)
 	f.server = httptest.NewServer(c.Router())
+	fmt.Printf("started books_api server at: %s\n", f.server.URL)
 }
 
 func (f *booksAPIFixture) Stop() {
+	fmt.Println("stopping books_api server")
 	f.server.Close()
+}
+
+func (f *booksAPIFixture) State(key string) string {
+	return f.server.URL
 }
 
 func TestBooksAPI(t *testing.T) {
 	f := booksAPIFixture{}
-	gdt.RegisterFixture(&f, "books_api")
+	gdt.Fixtures.Register("books_api", &f)
 	tc, err := gdt.FromFile(t, "failures.yaml")
 	if err != nil {
 		t.Fatal(err)

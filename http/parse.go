@@ -2,7 +2,6 @@ package http
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/ghodss/yaml"
 
@@ -46,7 +45,6 @@ type httpParser struct{}
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
 func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
-	var err error
 	tcs := testcaseSpec{}
 	if err := yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
@@ -61,20 +59,23 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 		}
 		if tspec.URL == "" {
 			if tspec.GET != "" {
-				tu.request, err = http.NewRequest("GET", "http://localhost:8081"+tspec.GET, nil)
-				if err != nil {
-					return err
-				}
+				tu.URL = tspec.GET
+				tu.Method = "GET"
+				//tu.request, err = http.NewRequest("GET", "http://localhost:8081"+tspec.GET, nil)
+			} else if tspec.POST != "" {
+				tu.URL = tspec.POST
+				tu.Method = "POST"
+			} else {
+				return fmt.Errorf("Either specify a URL, GET or POST attribute")
 			}
 		} else {
 			method := tspec.Method
 			if method == "" {
 				return fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
 			}
-			tu.request, err = http.NewRequest(method, tspec.URL, nil)
-			if err != nil {
-				return err
-			}
+			tu.URL = tspec.URL
+			tu.Method = method
+			//tu.request, err = http.NewRequest(method, tspec.URL, nil)
 		}
 		tc.AppendTest(&tu)
 	}

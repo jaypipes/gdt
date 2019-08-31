@@ -1,6 +1,7 @@
 package testcase
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/jaypipes/gdt/interfaces"
@@ -10,6 +11,8 @@ import (
 // interfaces.Testcase and wraps the testing.T struct
 type testcase struct {
 	t *testing.T
+	// the fixture registry used by the test case
+	fr interfaces.FixtureRegistry
 	// typ is the type of test case
 	typ string
 	// filepath is the filepath to the test file
@@ -22,7 +25,7 @@ type testcase struct {
 	// before-run stage
 	before map[string][]string
 	// set of tests that are run as part of this test case
-	tests []interfaces.Runnable
+	tests []interfaces.Testable
 }
 
 // T returns a pointer to the testing.T
@@ -51,15 +54,26 @@ func (tc *testcase) Describe() string {
 }
 
 // AppendTest appends a runnable test element to the test case
-func (tc *testcase) AppendTest(r interfaces.Runnable) {
+func (tc *testcase) AppendTest(r interfaces.Testable) {
 	tc.tests = append(tc.tests, r)
 }
 
 // Run executes the tests in the test case
 func (tc *testcase) Run() {
+	if tc.fr != nil {
+		for fname, fargs := range tc.before {
+			f := tc.fr.Get(fname)
+			if f == nil {
+				tc.t.Fatalf("failed to find required fixture %s", fname)
+			}
+			f.Start()
+			defer f.Stop()
+			fmt.Printf("started fixture %s with args %v\n", fname, fargs)
+		}
+	}
 	tc.t.Run(tc.name, func(_ *testing.T) {
 		for _, t := range tc.tests {
-			t.Run()
+			t.RunWithFixtures(tc.fr)
 		}
 	})
 }
@@ -79,6 +93,9 @@ func New(t *testing.T, opts ...WithOption) *testcase {
 	}
 	if useOpts.Name != "" {
 		tc.name = useOpts.Name
+	}
+	if useOpts.FixtureRegistry != nil {
+		tc.fr = useOpts.FixtureRegistry
 	}
 	return tc
 }
