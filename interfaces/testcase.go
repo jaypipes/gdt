@@ -7,5 +7,7 @@ type Testcase interface {
 	Typed
 	Filepath
 	Named
+	Runnable
 	T() *testing.T
+	AppendTest(Runnable)
 }

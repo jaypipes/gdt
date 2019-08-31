@@ -3,11 +3,8 @@ package http
 import (
 	"fmt"
 	"net/http"
-	nethttp "net/http"
-	"testing"
 
 	"github.com/ghodss/yaml"
-	"github.com/stretchr/testify/require"
 
 	"github.com/jaypipes/gdt/interfaces"
 )
@@ -58,8 +55,9 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 	t.Helper()
 	for _, tspec := range tcs.Specs {
 		tu := testUnit{
-			t:    t,
-			name: tspec.Name,
+			t:                 t,
+			name:              tspec.Name,
+			responseAssertion: tspec.Response,
 		}
 		if tspec.URL == "" {
 			if tspec.GET != "" {
@@ -78,30 +76,7 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 				return err
 			}
 		}
-		c := nethttp.DefaultClient
-		resp, _ := c.Do(tu.request)
-		tu.response = &response{resp}
-		require.NotNil(tu.t, resp, tu.request)
-		tu.t.Run(tspec.Name, func(t *testing.T) {
-			if tspec.Response != nil {
-				rspec := tspec.Response
-				if rspec.JSON != nil {
-					if rspec.JSON.Length != nil {
-						tu.assertJSONLength(*(rspec.JSON.Length))
-					}
-				}
-
-				if rspec.Status != nil {
-					tu.assertStatusCode(*(rspec.Status))
-				}
-
-				if len(rspec.Strings) > 0 {
-					for _, exp := range rspec.Strings {
-						tu.assertStringIn(exp)
-					}
-				}
-			}
-		})
+		tc.AppendTest(&tu)
 	}
 	return nil
 }

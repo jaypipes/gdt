@@ -16,7 +16,7 @@ Install `gdt` into your `$GOPATH` by executing:
 go get -u github.com/jaypipes/gdt
 ```
 
-Alternately, include "github.com/jaypipes/gdt" in your Golang dependency
+Alternately, include `github.com/jaypipes/gdt` in your Golang dependency
 management of choice.
 
 ## Introduction

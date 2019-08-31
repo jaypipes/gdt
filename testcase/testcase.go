@@ -2,6 +2,8 @@ package testcase
 
 import (
 	"testing"
+
+	"github.com/jaypipes/gdt/interfaces"
 )
 
 // Testcase describes the tests in a single gdt test file. Implements
@@ -19,6 +21,8 @@ type testcase struct {
 	// set of fixture names and args to associate with the testcase's
 	// before-run stage
 	before map[string][]string
+	// set of tests that are run as part of this test case
+	tests []interfaces.Runnable
 }
 
 // T returns a pointer to the testing.T
@@ -44,6 +48,20 @@ func (tc *testcase) Name() string {
 // Describe returns a description or name for the test case
 func (tc *testcase) Describe() string {
 	return tc.description
+}
+
+// AppendTest appends a runnable test element to the test case
+func (tc *testcase) AppendTest(r interfaces.Runnable) {
+	tc.tests = append(tc.tests, r)
+}
+
+// Run executes the tests in the test case
+func (tc *testcase) Run() {
+	tc.t.Run(tc.name, func(_ *testing.T) {
+		for _, t := range tc.tests {
+			t.Run()
+		}
+	})
 }
 
 // New returns a new `Testcase` for an HTTP test case. The function

@@ -22,12 +22,16 @@ func (f *booksAPIFixture) Start() {
 	f.server = httptest.NewServer(c.Router())
 }
 
-func (f *booksAPIFixture) Cleanup() {
+func (f *booksAPIFixture) Stop() {
 	f.server.Close()
 }
 
 func TestBooksAPI(t *testing.T) {
 	f := booksAPIFixture{}
 	gdt.RegisterFixture(&f, "books_api")
-	gdt.FromFile(t, "failures.yaml")
+	tc, err := gdt.FromFile(t, "failures.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tc.Run()
 }

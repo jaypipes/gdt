@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // testUnit implements interfaces.Runnable
@@ -21,6 +22,8 @@ type testUnit struct {
 	request *nethttp.Request
 	// HTTP Response object to assert on
 	response *response
+	// Specification for expected response
+	responseAssertion *responseAssertion
 }
 
 // T returns the underlying pointer to a testing.T
@@ -36,6 +39,34 @@ func (tu *testUnit) Name() string {
 // Describe returns a description or name for the test unit
 func (tu *testUnit) Describe() string {
 	return tu.description
+}
+
+// Run executes the test described by the test unit
+func (tu *testUnit) Run() {
+	c := nethttp.DefaultClient
+	resp, _ := c.Do(tu.request)
+	tu.response = &response{resp}
+	require.NotNil(tu.t, resp, tu.request)
+	tu.t.Run(tu.name, func(t *testing.T) {
+		if tu.responseAssertion != nil {
+			rspec := tu.responseAssertion
+			if rspec.JSON != nil {
+				if rspec.JSON.Length != nil {
+					tu.assertJSONLength(*(rspec.JSON.Length))
+				}
+			}
+
+			if rspec.Status != nil {
+				tu.assertStatusCode(*(rspec.Status))
+			}
+
+			if len(rspec.Strings) > 0 {
+				for _, exp := range rspec.Strings {
+					tu.assertStringIn(exp)
+				}
+			}
+		}
+	})
 }
 
 func (tu *testUnit) requestURL(path string) string {
