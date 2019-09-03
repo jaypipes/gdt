@@ -3,7 +3,6 @@ package http
 import (
 	"net/http"
 	nethttp "net/http"
-	"strings"
 	"testing"
 
 	"github.com/jaypipes/gdt/interfaces"
@@ -11,21 +10,41 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// testUnit implements interfaces.Runnable
-type testUnit struct {
-	t *testing.T
-	// fixture registry associated with the test unit's test case
-	fr interfaces.FixtureRegistry
+type httpTestcaseConfig struct {
+	baseURL string
+}
+
+// httpTestcase interfaces.Testcase
+type httpTestcase struct {
+	interfaces.Testcase
+	cfg *httpTestcaseConfig
+}
+
+func (htc *httpTestcase) BaseURL() string {
+	if htc.cfg != nil && htc.cfg.baseURL != "" {
+		return htc.cfg.baseURL
+	}
+	// query the fixture registry to determine if any of them contain an
+	// http.baseurl state attribute.
+	for _, f := range htc.Fixtures() {
+		if f.HasState("http.base_url") {
+			return f.State("http.base_url")
+		}
+	}
+	return ""
+}
+
+// httpTest implements interfaces.Testable
+type httpTest struct {
+	tc *httpTestcase
 	// Name for the individual HTTP call test
 	name string
 	// Description of the test (defaults to Name)
 	description string
-	// Base URL to use for request
-	baseURL string
 	// URL being called by HTTP client
-	URL string `json:"url"`
+	url string `json:"url"`
 	// HTTP Method specified by HTTP client
-	Method string `json:"method"`
+	method string `json:"method"`
 	// HTTP request to execute
 	request *nethttp.Request
 	// HTTP Response object to assert on
@@ -34,73 +53,64 @@ type testUnit struct {
 	responseAssertion *responseAssertion
 }
 
-// T returns the underlying pointer to a testing.T
-func (tu *testUnit) T() *testing.T {
-	return tu.t
+// Name returns a name for the HTTP test
+func (ht *httpTest) Name() string {
+	return ht.name
 }
 
-// Name returns a name for the test unit
-func (tu *testUnit) Name() string {
-	return tu.name
+// Describe returns a description or name for the HTTP test
+func (ht *httpTest) Describe() string {
+	return ht.description
 }
 
-// Describe returns a description or name for the test unit
-func (tu *testUnit) Describe() string {
-	return tu.description
-}
-
-// Run executes the test described by the test unit
-func (tu *testUnit) RunWithFixtures(fr interfaces.FixtureRegistry) {
+// Run executes the test described by the HTTP test
+func (ht *httpTest) Run() {
 	var err error
-	baseURL := fr.Get("books_api").State("URL")
-	tu.request, err = http.NewRequest(tu.Method, baseURL+tu.URL, nil)
-	require.Nil(tu.t, err)
+	baseURL := ht.tc.BaseURL()
+	ht.request, err = http.NewRequest(ht.method, baseURL+ht.url, nil)
+	require.Nil(ht.tc.T(), err)
 	c := nethttp.DefaultClient
-	resp, _ := c.Do(tu.request)
-	tu.response = &response{resp}
-	require.NotNil(tu.t, resp, "Expected nil net/http:Response but got nil")
-	tu.t.Run(tu.name, func(t *testing.T) {
-		if tu.responseAssertion != nil {
-			rspec := tu.responseAssertion
+	resp, _ := c.Do(ht.request)
+	ht.response = &response{resp}
+	require.NotNil(ht.tc.T(), resp, "Expected nil net/http:Response but got nil")
+	ht.tc.T().Run(ht.name, func(t *testing.T) {
+		if ht.responseAssertion != nil {
+			rspec := ht.responseAssertion
 			if rspec.JSON != nil {
 				if rspec.JSON.Length != nil {
-					tu.assertJSONLength(*(rspec.JSON.Length))
+					ht.assertJSONLength(*(rspec.JSON.Length))
 				}
 			}
 
 			if rspec.Status != nil {
-				tu.assertStatusCode(*(rspec.Status))
+				ht.assertStatusCode(*(rspec.Status))
 			}
 
 			if len(rspec.Strings) > 0 {
 				for _, exp := range rspec.Strings {
-					tu.assertStringIn(exp)
+					ht.assertStringIn(exp)
 				}
 			}
 		}
 	})
 }
 
-func (tu *testUnit) requestURL(path string) string {
-	return tu.baseURL + "/" + strings.TrimPrefix(path, "/")
-}
-
-func (tu *testUnit) assertJSONLength(exp uint) {
-	tu.t.Run("check JSON length", func(t *testing.T) {
+func (tu *httpTest) assertJSONLength(exp uint) {
+	tu.tc.T().Run("check JSON length", func(t *testing.T) {
 		got := tu.response.JSON()
 		assert.Equal(t, uint(len(got)), exp, "Expected HTTP response to have JSON length of %d but got %d", exp, len(got))
 	})
 }
 
-func (tu *testUnit) assertStatusCode(exp int) {
-	tu.t.Run("check HTTP status code", func(t *testing.T) {
+func (tu *httpTest) assertStatusCode(exp int) {
+	tu.tc.T().Run("check HTTP status code", func(t *testing.T) {
 		got := tu.response.StatusCode
 		assert.Equal(t, exp, got, "Expected HTTP response to have status code of %d but got %d", exp, got)
 	})
 }
 
-func (tu *testUnit) assertStringIn(exp string) {
-	tu.t.Run("check HTTP status code", func(t *testing.T) {
+func (tu *httpTest) assertStringIn(exp string) {
+	tu.tc.T().Run("check HTTP status code", func(t *testing.T) {
 		got := tu.response.Text()
 		assert.Contains(t, got, exp, "Expected HTTP response to contain %s", exp)
 	})

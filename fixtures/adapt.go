@@ -4,7 +4,8 @@ import "github.com/jaypipes/gdt/interfaces"
 
 type simpleFixture struct {
 	starter func()
-	cleaner func()
+	stopper func()
+	state   map[string]string
 }
 
 // Start sets up any resources the fixture uses
@@ -14,16 +15,70 @@ func (f *simpleFixture) Start() {
 	}
 }
 
-// Cleanup cleans up any resources the fixture uses
-func (f *simpleFixture) Cleanup() {
-	if f.start != nil {
-		f.cleaner()
+// Stop cleans up any resources the fixture uses
+func (f *simpleFixture) Stop() {
+	if f.stopper != nil {
+		f.stopper()
 	}
 }
 
-// AdaptStart returns a simple object that implements the interfaces.Fixture
-// interface from a function that accepts no arguments and returns no arguments
-// and will be run when the fixture is started
-func AdaptStart(start func()) interfaces.Fixture {
-	return &simpleFixture{starter: start}
+// HasState returns true if the fixture has a state attribute with the supplied
+// key
+func (f *simpeFixture) HasState(key string) bool {
+	if f.state != nil {
+		if _, ok := f.state[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// GetState returns a string attribute from the fixture's state map if the
+// supplied key exists, otherwise returns empty string
+func (f *simpleFixture) State(key string) string {
+	if f.state != nil {
+		return f.state[key]
+	}
+	return ""
+}
+
+type WithOption struct {
+	Starter func()
+	Stopper func()
+	State   map[string]string
+}
+
+func WithStart(starter func()) WithOption {
+	return WithOption{Starter: starter}
+}
+
+func WithStop(stopper func()) WithOption {
+	return WithOption{Stopper: stopper}
+}
+
+func WithState(state map[string]string) WithOption {
+	return WithOption{State: state}
+}
+
+// Adapt returns a simple object that implements the interfaces.Fixture
+// interface from one or more WithOptions describing starter, stopper functions
+// or a state map
+func Adapt(opts ...*WithOption) interfaces.Fixture {
+	if len(opts) == 0 {
+		fmt.Panic("gdt.fixtures.Adapt should be called with at least one WithOption")
+	}
+	res := &simpleFixture{}
+
+	for _, opt := range opts {
+		if opt.Starter != nil {
+			res.starter = opt.Starter
+		}
+		if opt.Stopper != nil {
+			res.stopper = opt.Stopper
+		}
+		if opt.State != nil {
+			res.state = opt.State
+		}
+	}
+	return res
 }

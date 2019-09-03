@@ -35,8 +35,13 @@ type testSpec struct {
 	Response *responseAssertion `json:"response"`
 }
 
-type testcaseSpec struct {
-	Specs []*testSpec `json:"tests"`
+type httpTestcaseConfigSchema struct {
+	baseURL string `json:"base_url"`
+}
+
+type httpTestcaseSchema struct {
+	Config *httpTestcaseConfigSchema `json:"http"`
+	Specs  []*testSpec               `json:"tests"`
 }
 
 type httpParser struct{}
@@ -45,26 +50,27 @@ type httpParser struct{}
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
 func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
-	tcs := testcaseSpec{}
+	tcs := httpTestcaseSchema{}
 	if err := yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
-	t := tc.T()
-	t.Helper()
+	tc = &httpTestcase{
+		tc, nil,
+	}
 	for _, tspec := range tcs.Specs {
-		tu := testUnit{
-			t:                 t,
+		ht := httpTest{
+			tc:                tc.(*httpTestcase),
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
 		}
 		if tspec.URL == "" {
 			if tspec.GET != "" {
-				tu.URL = tspec.GET
-				tu.Method = "GET"
+				ht.url = tspec.GET
+				ht.method = "GET"
 				//tu.request, err = http.NewRequest("GET", "http://localhost:8081"+tspec.GET, nil)
 			} else if tspec.POST != "" {
-				tu.URL = tspec.POST
-				tu.Method = "POST"
+				ht.url = tspec.POST
+				ht.method = "POST"
 			} else {
 				return fmt.Errorf("Either specify a URL, GET or POST attribute")
 			}
@@ -73,11 +79,11 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 			if method == "" {
 				return fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
 			}
-			tu.URL = tspec.URL
-			tu.Method = method
+			ht.url = tspec.URL
+			ht.method = method
 			//tu.request, err = http.NewRequest(method, tspec.URL, nil)
 		}
-		tc.AppendTest(&tu)
+		tc.AppendRunnable(&ht)
 	}
 	return nil
 }

@@ -25,12 +25,17 @@ type testcase struct {
 	// before-run stage
 	before map[string][]string
 	// set of tests that are run as part of this test case
-	tests []interfaces.Testable
+	tests []interfaces.Runnable
 }
 
 // T returns a pointer to the testing.T
 func (tc *testcase) T() *testing.T {
 	return tc.t
+}
+
+// Fixtures returns a pointer to the fixture registry
+func (tc *testcase) Fixtures() []interfaces.Fixture {
+	return tc.fr.List()
 }
 
 // Type returns the test case's type, e.g. "http"
@@ -53,8 +58,8 @@ func (tc *testcase) Describe() string {
 	return tc.description
 }
 
-// AppendTest appends a runnable test element to the test case
-func (tc *testcase) AppendTest(r interfaces.Testable) {
+// AppendRunnable appends a runnable test element to the test case
+func (tc *testcase) AppendRunnable(r interfaces.Runnable) {
 	tc.tests = append(tc.tests, r)
 }
 
@@ -73,7 +78,7 @@ func (tc *testcase) Run() {
 	}
 	tc.t.Run(tc.name, func(_ *testing.T) {
 		for _, t := range tc.tests {
-			t.RunWithFixtures(tc.fr)
+			t.Run()
 		}
 	})
 }

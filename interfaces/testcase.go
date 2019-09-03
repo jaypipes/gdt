@@ -9,5 +9,6 @@ type Testcase interface {
 	Named
 	Runnable
 	T() *testing.T
-	AppendTest(Testable)
+	Fixtures() []Fixture
+	AppendRunnable(Runnable)
 }

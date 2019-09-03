@@ -29,3 +29,14 @@ func (fr *fixtureRegistry) Register(name string, f interfaces.Fixture) {
 func (fr *fixtureRegistry) Get(name string) interfaces.Fixture {
 	return fr.entries[strings.ToLower(name)]
 }
+
+// List returns an array of fixtures
+func (fr *fixtureRegistry) List() []interfaces.Fixture {
+	res := make([]interfaces.Fixture, len(fr.entries))
+	x := 0
+	for _, f := range fr.entries {
+		res[x] = f
+		x++
+	}
+	return res
+}

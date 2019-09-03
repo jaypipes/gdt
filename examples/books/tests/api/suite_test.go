@@ -29,8 +29,18 @@ func (f *booksAPIFixture) Stop() {
 	f.server.Close()
 }
 
+func (f *booksAPIFixture) HasState(key string) bool {
+	if key == "http.base_url" {
+		return true
+	}
+	return false
+}
+
 func (f *booksAPIFixture) State(key string) string {
-	return f.server.URL
+	if key == "http.base_url" {
+		return f.server.URL
+	}
+	return ""
 }
 
 func TestBooksAPI(t *testing.T) {
