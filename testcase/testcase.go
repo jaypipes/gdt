@@ -1,7 +1,6 @@
 package testcase
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/jaypipes/gdt/interfaces"
@@ -66,14 +65,13 @@ func (tc *testcase) AppendRunnable(r interfaces.Runnable) {
 // Run executes the tests in the test case
 func (tc *testcase) Run() {
 	if tc.fr != nil {
-		for fname, fargs := range tc.before {
+		for fname, _ := range tc.before {
 			f := tc.fr.Get(fname)
 			if f == nil {
 				tc.t.Fatalf("failed to find required fixture %s", fname)
 			}
 			f.Start()
 			defer f.Stop()
-			fmt.Printf("started fixture %s with args %v\n", fname, fargs)
 		}
 	}
 	tc.t.Run(tc.name, func(_ *testing.T) {
