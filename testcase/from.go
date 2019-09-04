@@ -1,7 +1,6 @@
 package testcase
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -12,18 +11,11 @@ import (
 	"github.com/jaypipes/gdt/interfaces"
 )
 
-type fixture struct {
-	Name string
-	Args []string
-}
-
-type fixtureSpec []string
-
 type testcaseSpec struct {
-	Type        string      `json:"type"`
-	Name        string      `json:"name"`
-	Description string      `json:"description"`
-	Setup       fixtureSpec `json:"setup"`
+	Type        string   `json:"type"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Require     []string `json:"require"`
 }
 
 // From parses a gdt YAML file and populates the Testcase with appropriate
@@ -49,7 +41,6 @@ func (tc *testcase) From(
 	}
 	tcs := testcaseSpec{}
 	if err = yaml.Unmarshal(contents, &tcs); err != nil {
-		fmt.Printf("ERR: %s\n", err)
 		return nil, nil, err
 	}
 
@@ -65,10 +56,10 @@ func (tc *testcase) From(
 
 	tc.typ = strings.ToLower(tcs.Type)
 
-	if len(tcs.Setup) > 0 {
-		tc.before = make(map[string][]string, len(tcs.Setup))
+	if len(tcs.Require) > 0 {
+		tc.before = make(map[string][]string, len(tcs.Require))
 		// TODO(jaypipes): Parse a function-call interface from string...
-		for _, elem := range tcs.Setup {
+		for _, elem := range tcs.Require {
 			tc.before[elem] = []string{}
 		}
 	}

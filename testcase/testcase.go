@@ -81,13 +81,18 @@ func (tc *testcase) Run() {
 	})
 }
 
-// New returns a new `Testcase` for an HTTP test case. The function
-// accepts zero or more `WithOption` values that affect the returned test
-// case.
+// New returns a new `Testcase`. The function accepts a pointer to the
+// testing.T that represents the golang testing framework and accepts zero or
+// more `WithOption` values that affect the returned test case.
 //
 // Usage:
 //
-//   tc := testcase.New(testcase.Withname("books_api"))
+// import "github.com/jaypipes/gdt/testcase"
+//
+// func TestBooksAPI(t *testing.T) {
+//     tc := testcase.New(t, testcase.WithName("books_api"))
+//     t.Run()
+// }
 func New(t *testing.T, opts ...WithOption) *testcase {
 	useOpts := mergeOptions(opts...)
 	tc := &testcase{t: t}

@@ -1,4 +1,4 @@
-setup:
+require:
  - books_api
 tests:
  - name: no such book was found

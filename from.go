@@ -1,6 +1,7 @@
 package gdt
 
 import (
+	"log"
 	"testing"
 
 	gdterrors "github.com/jaypipes/gdt/errors"
@@ -13,6 +14,7 @@ import (
 func FromFile(t *testing.T, fp string) (interfaces.Testcase, error) {
 	tc, contents, err := testcase.New(t, testcase.WithFixtureRegistry(Fixtures)).From(fp)
 	if err != nil {
+		log.Fatalf("error parsing test case %s: %s\n", fp, err)
 		return nil, err
 	}
 	parser, found := parsers[tc.Type()]
