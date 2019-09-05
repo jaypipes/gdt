@@ -4,7 +4,7 @@ import (
 	nethttp "net/http"
 	"net/http/httptest"
 
-	"github.com/jaypipes/gdt/interfaces"
+	"github.com/jaypipes/gdt"
 )
 
 type httpServerFixture struct {
@@ -38,6 +38,6 @@ func (f *httpServerFixture) State(key string) string {
 // http.Handler. The returned fixture exposes an "http.base_url" state key that
 // test cases of type "http" examine to determine the base URL the tests should
 // hit
-func NewHTTPServerFixture(h nethttp.Handler) interfaces.Fixture {
+func NewHTTPServerFixture(h nethttp.Handler) gdt.Fixture {
 	return &httpServerFixture{handler: h}
 }

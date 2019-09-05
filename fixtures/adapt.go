@@ -1,6 +1,6 @@
 package fixtures
 
-import "github.com/jaypipes/gdt/interfaces"
+import "github.com/jaypipes/gdt"
 
 type simpleFixture struct {
 	starter func()
@@ -63,7 +63,7 @@ func WithState(state map[string]string) WithOption {
 // Adapt returns a simple object that implements the interfaces.Fixture
 // interface from one or more WithOptions describing starter, stopper functions
 // or a state map
-func Adapt(opts ...*WithOption) interfaces.Fixture {
+func Adapt(opts ...*WithOption) gdt.Fixture {
 	if len(opts) == 0 {
 		fmt.Panic("gdt.fixtures.Adapt should be called with at least one WithOption")
 	}

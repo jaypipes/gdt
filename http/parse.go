@@ -5,7 +5,7 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	"github.com/jaypipes/gdt/interfaces"
+	"github.com/jaypipes/gdt"
 )
 
 type jsonAssertion struct {
@@ -36,7 +36,7 @@ type testSpec struct {
 }
 
 type httpTestcaseConfigSchema struct {
-	baseURL string `json:"base_url"`
+	baseURL string
 }
 
 type httpTestcaseSchema struct {
@@ -49,17 +49,17 @@ type httpParser struct{}
 // Parse accepts a Testcase and a string of YAML contents from a gdt test file.
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
-func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
+func (p *httpParser) Parse(tf *gdt.TestFile, contents []byte) error {
 	tcs := httpTestcaseSchema{}
 	if err := yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
-	tc = &httpTestcase{
-		tc, nil,
+	tc := &httpTestcase{
+		tf, nil,
 	}
 	for _, tspec := range tcs.Specs {
 		ht := httpTest{
-			tc:                tc.(*httpTestcase),
+			tc:                tc,
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
 		}
@@ -67,7 +67,6 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 			if tspec.GET != "" {
 				ht.url = tspec.GET
 				ht.method = "GET"
-				//tu.request, err = http.NewRequest("GET", "http://localhost:8081"+tspec.GET, nil)
 			} else if tspec.POST != "" {
 				ht.url = tspec.POST
 				ht.method = "POST"
@@ -81,9 +80,8 @@ func (p *httpParser) Parse(tc interfaces.Testcase, contents []byte) error {
 			}
 			ht.url = tspec.URL
 			ht.method = method
-			//tu.request, err = http.NewRequest(method, tspec.URL, nil)
 		}
-		tc.AppendRunnable(&ht)
+		tf.Append(&ht)
 	}
 	return nil
 }
