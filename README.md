@@ -72,7 +72,7 @@ they can instead have a test that looks like this:
 
 
 ```yaml
-setup:
+require:
  - books_api
 tests:
  - name: no such book was found
@@ -94,7 +94,7 @@ this ([`examples/books/api/types_test.go`](examples/books/api/types_test.go)):
 package api_test
 
 import (
-    api "."
+    "github.com/jaypipes/gdt/examples/books/api"
     . "github.com/onsi/ginkgo"
     . "github.com/onsi/gomega"
 )
@@ -152,16 +152,20 @@ package api_test
 
 import (
     "io/ioutil"
+    "log"
     "net/http"
+    "net/http/httptest"
     "os"
     "strings"
 
     . "github.com/onsi/ginkgo"
     . "github.com/onsi/gomega"
+
+    "github.com/jaypipes/gdt/examples/books/api"
 )
 
-const (
-    defaultAPIServerURL = "http://localhost:8081"
+var (
+    server *httptest.Server
 )
 
 // respJSON returns a string if the supplied HTTP response body is JSON,
@@ -191,12 +195,20 @@ func respText(r *http.Response) string {
 }
 
 func apiPath(path string) string {
-    serverURL, found := os.LookupEnv("EXAMPLES_BOOKS_API_SERVER_URL")
-    if !found {
-        serverURL = defaultAPIServerURL
-    }
-    return strings.TrimSuffix(serverURL, "/") + "/" + strings.TrimPrefix(path, "/")
+    return strings.TrimSuffix(server.URL, "/") + "/" + strings.TrimPrefix(path, "/")
 }
+
+// Register an HTTP server fixture that spins up the API service on a
+// random port on localhost
+var _ = BeforeSuite(func() {
+    logger := log.New(os.Stdout, "http: ", log.LstdFlags)
+    c := api.NewControllerWithBooks(logger, nil)
+    server = httptest.NewServer(c.Router())
+})
+
+var _ = AfterSuite(func() {
+    server.Close()
+})
 
 var _ = Describe("Books API - GET /books failures", func() {
     var response *http.Response
@@ -247,11 +259,11 @@ var _ = Describe("Books API - GET /books failures", func() {
 
 The above test code obscures what is being tested by cluttering the test
 assertions with the Golang closures and accessor code. Compare the above with
-how `gdt` would allow the test author to describe the same assertions
-(`examples/books/api/tests/failures.yaml`):
+how `gdt` allows the test author to describe the same assertions
+([`examples/books/api/tests/failures.yaml`](examples/books/tests/api/failures.yaml)):
 
 ```yaml
-setup:
+require:
  - books_api
 tests:
  - name: no such book was found
@@ -290,101 +302,79 @@ Consider a Ginkgo Golang test case that checks the following behaviour:
 * The newly-created book's ID field is a valid UUID
 * The newly-created book's publisher has an address containing a known state code
 
-A typical implementation of a Ginkgo Golang test might look like this:
+A typical implementation of a Ginkgo Golang test might look like this ([`examples/books/api/create_then_get_test.go`](examples/books/api/create_then_get_test.go)):
 
 ```go
-package books_test
+package api_test
 
 import (
+    "bytes"
     "encoding/json"
-    "regex"
+    "net/http"
 
-    . "/path/to/books"
     . "github.com/onsi/ginkgo"
     . "github.com/onsi/gomega"
+
+    "github.com/jaypipes/gdt/examples/books/api"
 )
 
-func IsValidUUID(uuid string) bool {
-    r := regexp.MustCompile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[8|9|aA|bB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$")
-    return r.MatchString(uuid)
-}
+var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
 
-Describe("Books API", func() {
-    var client APIClient
-    var booksServer books.BooksServer
-    var response chan APIResponse
-    var newBookURL string
-
-    var authorID := getAuthorFixtureByName("Ernest Hemingway").ID
-    var publisherID := getPublisherFixtureByName("Charles Scribner's Sons").ID
-
-    BeforeEach(func() {
-        response = make(chan APIResponse, 1)
-        booksServer = NewBookServer()
-        client = NewAPIClient(booksServer)
-    })
+    var err error
+    var resp *http.Response
+    var locURL string
+    var authorID, publisherID string
 
     Describe("proper HTTP GET after POST", func() {
+
         Context("when creating a single book resource", func() {
-            BeforeEach(func() {
-                req := books.CreateBookAPIRequest{
-                    Name: "For Whom The Bell Tolls",
-                    AuthorID: authorID,
+            It("should be retrievable via GET {location header}", func() {
+                // See https://github.com/onsi/ginkgo/issues/457 for why this
+                // needs to be here instead of in the outer Describe block.
+                authorID = getAuthorByName("Ernest Hemingway").ID
+                publisherID = getPublisherByName("Charles Scribner's Sons").ID
+                req := api.CreateBookRequest{
+                    Title:       "For Whom The Bell Tolls",
+                    AuthorID:    authorID,
                     PublisherID: publisherID,
                     PublishedOn: "1940-10-21",
+                    Pages:       480,
                 }
-                payload, err := json.Marshal(&req)
+                var payload []byte
+                payload, err = json.Marshal(&req)
                 if err != nil {
                     Fail("Failed to serialize JSON in setup")
                 }
-                client.Post("/books", payload)
-            })
-
-            It("should return 201", func() {
-                Ω((<-response).StatusCode).Should(Equal(200))
-            })
-
-            It("should return a Location HTTP header", func() {
-                Ω((<-response).Headers).Should(HaveKey("Location"))
-            })
-
-            newBookURL := (<-response).Headers["Location"]
-        }
-
-        Context("when creating a single book resource", func() {
-            BeforeEach(func() {
-                client.Get(newBookURL, response)
-            })
-
-            var book books.Book
-            err := json.Unmarshal([]byte((<-response).JSON)), &book)
-
-            It("should have valid JSON", func() {
+                resp, err = http.Post(apiPath("/books"), "application/json", bytes.NewBuffer(payload))
                 Ω(err).Should(BeNil())
-            })
 
-            It("should have a UUID as ID attribute", func() {
-                Ω(IsValidUUID(book.ID)).Should(BeTrue())
-            })
+                // See https://github.com/onsi/ginkgo/issues/70 for why this
+                // has to be one giant It() block. The GET tests rely on the
+                // result of an earlier POST response (for the Location header)
+                // and therefore all of the assertions below much be in a
+                // single It() block. :(
 
-            It("should have an Author sub-object", func() {
+                Ω(resp.StatusCode).Should(Equal(201))
+                Ω(resp.Header).Should(HaveKey("Location"))
+
+                locURL = resp.Header["Location"][0]
+
+                resp, err = http.Get(apiPath(locURL))
+                Ω(err).Should(BeNil())
+
+                Ω(resp.StatusCode).Should(Equal(200))
+
+                var book api.Book
+
+                err := json.Unmarshal([]byte(respJSON(resp)), &book)
+                Ω(err).Should(BeNil())
+
+                Ω(IsValidUUID4(book.ID)).Should(BeTrue())
                 Ω(book.Author).ShouldNot(BeNil())
-            })
-
-            It("should have an Author Name as expected", func() {
                 Ω(book.Author.Name).Should(Equal("Ernest Hemingway"))
-            })
-
-            It("should have a Publisher sub-object", func() {
                 Ω(book.Publisher).ShouldNot(BeNil())
-            })
-
-            It("should have a Publisher.Address sub-object", func() {
                 Ω(book.Publisher.Address).ShouldNot(BeNil())
-            })
-
-            It("should have an Publisher State as expected", func() {
-                Ω(book.Publisher.State).Should(Equal("New York"))
+                Ω(book.Publisher.Address.State).Should(Equal("NY"))
             })
         })
     })
@@ -396,7 +386,7 @@ might create to describe the same assertions
 (`examples/books/tests/create-then-get.yaml`):
 
 ```yaml
-setup:
+require:
  - books_api
  - authors_by_name
  - publishers_by_name

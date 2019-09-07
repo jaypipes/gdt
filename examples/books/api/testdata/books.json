@@ -1,15 +1,16 @@
 [
 {
-"id": "9780684803357",
-"title": "For Whom The Bell Tolls",
-"published_on": "1940-10-21",
-"pages": 480,
+"id": "12ac1b94-5667-461e-80cb-ba8619cae61a",
+"title": "Old Man and the Sea",
+"published_on": "1952-10-01",
+"pages": 127,
 "author": {
   "name": "Ernest Hemingway",
   "id": "1"
 },
 "publisher": {
   "name": "Charles Scribner's Sons",
+  "id": "1",
   "address": {
     "address": "153–157 Fifth Avenue",
     "city": "New York City",

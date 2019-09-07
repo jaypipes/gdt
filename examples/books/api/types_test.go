@@ -1,7 +1,7 @@
 package api_test
 
 import (
-	api "."
+	"github.com/jaypipes/gdt/examples/books/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

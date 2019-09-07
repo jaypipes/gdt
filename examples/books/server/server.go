@@ -20,7 +20,7 @@ var (
 
 func main() {
 	flag.StringVar(&listenAddr, "listen", ":8081", "Books API server listen address")
-	flag.StringVar(&dataFilepath, "data-filepath", "books.json", "File with Books JSON data")
+	flag.StringVar(&dataFilepath, "data-filepath", "../api/testdata/books.json", "File with Books JSON data")
 	flag.Parse()
 
 	var data []*api.Book

@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+
+	"github.com/google/uuid"
 )
 
 func errAuthorNotFound(authorID string) error {
@@ -139,10 +141,6 @@ func listBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 }
 
 func postBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/books" {
-		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		return
-	}
 	decoder := json.NewDecoder(r.Body)
 	var cbr CreateBookRequest
 	err := decoder.Decode(&cbr)
@@ -184,16 +182,20 @@ func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
 	if !found {
 		return "", errPublisherNotFound(cbr.PublisherID)
 	}
-
-	createdID := "newID"
+	createdID, err := uuid.NewRandom()
+	if err != nil {
+		panic(err)
+	}
 
 	c.books[cbr.Title] = &Book{
 		Title:       cbr.Title,
 		PublishedOn: cbr.PublishedOn,
+		Pages:       cbr.Pages,
+		ID:          createdID.String(),
 		Author:      author,
 		Publisher:   publisher,
 	}
-	return createdID, nil
+	return createdID.String(), nil
 }
 
 func (c *Controller) ListBooks() []*Book {
@@ -205,7 +207,12 @@ func (c *Controller) ListBooks() []*Book {
 }
 
 func (c *Controller) GetBook(bookID string) *Book {
-	return c.books[bookID]
+	for _, book := range c.books {
+		if book.ID == bookID {
+			return book
+		}
+	}
+	return nil
 }
 
 func (c *Controller) Log(args ...interface{}) {
