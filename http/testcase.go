@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/jaypipes/gdt"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,8 +53,6 @@ type httpTest struct {
 	request *nethttp.Request
 	// JSON-marshaled payload to send in request
 	jsonBody []byte
-	// HTTP Response object to assert on
-	response *response
 	// Specification for expected response
 	responseAssertion *responseAssertion
 }
@@ -87,62 +84,32 @@ func (ht *httpTest) Run(t *testing.T) {
 	resp, err := c.Do(ht.request)
 	require.Nil(t, err)
 	require.NotNil(t, resp, "Expected nil net/http:Response but got nil")
-	ht.response = &response{resp}
 	t.Run(ht.name, func(t *testing.T) {
 		if ht.responseAssertion != nil {
 			rspec := ht.responseAssertion
-			if rspec.JSON != nil {
-				if rspec.JSON.Length != nil {
-					ht.assertJSONLength(t, *(rspec.JSON.Length))
-				}
-			}
 
 			if rspec.Status != nil {
-				ht.assertStatusCode(t, *(rspec.Status))
+				assertHTTPStatusEqual(t, resp, *(rspec.Status))
+			}
+
+			if rspec.JSON != nil {
+				if rspec.JSON.Length != nil {
+					assertJSONLen(t, resp, *(rspec.JSON.Length))
+				}
 			}
 
 			if len(rspec.Strings) > 0 {
 				for _, exp := range rspec.Strings {
-					ht.assertStringIn(t, exp)
+					assertStringInBody(t, resp, exp)
 				}
 			}
 
 			if len(rspec.Headers) > 0 {
 				for _, exp := range rspec.Headers {
-					val := resp.Header.Get(exp)
-					assert.NotEmpty(t, val, "Expected header %s to be in response from %s %s", exp, ht.method, urlStr)
-					// If the string being compared is of the form Key: Value,
-					// then we check for both existence and the value of the
-					// header
-					colonPos := strings.IndexRune(exp, ':')
-					if colonPos > -1 {
-						expVal := exp[colonPos:]
-						assert.Equal(t, strings.ToLower(expVal), strings.ToLower(val))
-					}
+					assertHeader(t, resp, exp)
 				}
 			}
 		}
 	})
 	ht.tc.PrevResponse = resp
-}
-
-func (ht *httpTest) assertJSONLength(t *testing.T, exp uint) {
-	t.Run("check JSON length", func(t *testing.T) {
-		got := ht.response.JSON()
-		assert.Equal(t, uint(len(got)), exp, "Expected HTTP response to have JSON length of %d but got %d", exp, len(got))
-	})
-}
-
-func (ht *httpTest) assertStatusCode(t *testing.T, exp int) {
-	t.Run("check HTTP status code", func(t *testing.T) {
-		got := ht.response.StatusCode
-		assert.Equal(t, exp, got, "Expected HTTP response to have status code of %d but got %d", exp, got)
-	})
-}
-
-func (ht *httpTest) assertStringIn(t *testing.T, exp string) {
-	t.Run("check HTTP status code", func(t *testing.T) {
-		got := ht.response.Text()
-		assert.Contains(t, got, exp, "Expected HTTP response to contain %s", exp)
-	})
 }

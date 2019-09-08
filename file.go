@@ -45,7 +45,7 @@ func (tf *TestFile) Run(t *testing.T) {
 			defer f.Stop()
 		}
 	}
-	t.Run(tf.name, func(t *testing.T) {
+	t.Run(tf.path, func(t *testing.T) {
 		for _, test := range tf.units {
 			test.Run(t)
 		}

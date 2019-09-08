@@ -3,6 +3,7 @@ package gdt
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -59,6 +60,7 @@ func Parse(ctx *context, path string) (Runnable, error) {
 	tf := &TestFile{
 		ctx:         ctx,
 		typ:         strings.ToLower(tfs.Type),
+		path:        filepath.Base(path),
 		name:        tfs.Name,
 		description: tfs.Description,
 	}
