@@ -15,6 +15,7 @@ type jsonAssertion struct {
 
 type responseAssertion struct {
 	JSON    *jsonAssertion `json:"json"`
+	Headers []string       `json:"headers"`
 	Strings []string       `json:"strings"`
 	Status  *int           `json:"status"`
 }

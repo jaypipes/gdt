@@ -106,6 +106,21 @@ func (ht *httpTest) Run(t *testing.T) {
 					ht.assertStringIn(t, exp)
 				}
 			}
+
+			if len(rspec.Headers) > 0 {
+				for _, exp := range rspec.Headers {
+					val := resp.Header.Get(exp)
+					assert.NotEmpty(t, val, "Expected header %s to be in response from %s %s", exp, ht.method, urlStr)
+					// If the string being compared is of the form Key: Value,
+					// then we check for both existence and the value of the
+					// header
+					colonPos := strings.IndexRune(exp, ':')
+					if colonPos > -1 {
+						expVal := exp[colonPos:]
+						assert.Equal(t, strings.ToLower(expVal), strings.ToLower(val))
+					}
+				}
+			}
 		}
 	})
 	ht.tc.PrevResponse = resp
