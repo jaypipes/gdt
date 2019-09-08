@@ -3,16 +3,10 @@ package api_test
 import (
 	"io/ioutil"
 	"net/http"
-	"net/http/httptest"
 	"regexp"
 	"strings"
 
 	"github.com/jaypipes/gdt/examples/books/api"
-)
-
-var (
-	server *httptest.Server
-	data   []*api.Book
 )
 
 // respJSON returns a string if the supplied HTTP response body is JSON,

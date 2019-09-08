@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 	"path/filepath"
@@ -13,11 +14,24 @@ import (
 	"github.com/jaypipes/gdt/examples/books/api"
 )
 
+var (
+	data []*api.Book
+)
+
 func TestBooksAPI(t *testing.T) {
 	// Register an HTTP server fixture that spins up the API service on a
 	// random port on localhost
+	dataFilepath := "testdata/books.json"
+
+	dataFile, err := os.Open(dataFilepath)
+	if err != nil {
+		panic(err)
+	}
+	if err = json.NewDecoder(dataFile).Decode(&data); err != nil {
+		panic(err)
+	}
 	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
-	c := api.NewControllerWithBooks(logger, nil)
+	c := api.NewControllerWithBooks(logger, data)
 	f := http.NewHTTPServerFixture(c.Router())
 	gdt.Fixtures.Register("books_api", f)
 

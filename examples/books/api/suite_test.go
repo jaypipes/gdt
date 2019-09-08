@@ -13,6 +13,11 @@ import (
 	"github.com/jaypipes/gdt/examples/books/api"
 )
 
+var (
+	server *httptest.Server
+	data   []*api.Book
+)
+
 // Register an HTTP server fixture that spins up the API service on a
 // random port on localhost
 var _ = BeforeSuite(func() {

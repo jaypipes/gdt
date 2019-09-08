@@ -383,7 +383,7 @@ var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
 
 Compare the above test code to the following YAML document that a `gdt` user
 might create to describe the same assertions 
-(`examples/books/tests/create-then-get.yaml`):
+(`examples/books/tests/create_then_get.yaml`):
 
 ```yaml
 require:

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/ghodss/yaml"
@@ -31,6 +32,8 @@ type testSpec struct {
 	GET string `json:"GET"`
 	// Shortcut for URL and Method of "POST"
 	POST string `json:"POST"`
+	// JSON payload to send along in request
+	Data interface{} `json:"data"`
 	// Specification for expected response
 	Response *responseAssertion `json:"response"`
 }
@@ -50,18 +53,25 @@ type httpParser struct{}
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
 func (p *httpParser) Parse(tf *gdt.TestFile, contents []byte) error {
+	var err error
 	tcs := httpTestcaseSchema{}
-	if err := yaml.Unmarshal(contents, &tcs); err != nil {
+	if err = yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
 	tc := &httpTestcase{
-		tf, nil,
+		tf, nil, nil,
 	}
 	for _, tspec := range tcs.Specs {
 		ht := httpTest{
 			tc:                tc,
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
+		}
+		if tspec.Data != nil {
+			ht.jsonBody, err = json.Marshal(tspec.Data)
+			if err != nil {
+				return err
+			}
 		}
 		if tspec.URL == "" {
 			if tspec.GET != "" {

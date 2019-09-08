@@ -24,7 +24,7 @@ func (f *simpleFixture) Stop() {
 
 // HasState returns true if the fixture has a state attribute with the supplied
 // key
-func (f *simpeFixture) HasState(key string) bool {
+func (f *simpleFixture) HasState(key string) bool {
 	if f.state != nil {
 		if _, ok := f.state[key]; ok {
 			return true
@@ -48,14 +48,17 @@ type WithOption struct {
 	State   map[string]string
 }
 
+// WithStart allows a starter functor to be adapted into a fixture
 func WithStart(starter func()) WithOption {
 	return WithOption{Starter: starter}
 }
 
+// WithStop allows a stopper functor to be adapted into a fixture
 func WithStop(stopper func()) WithOption {
 	return WithOption{Stopper: stopper}
 }
 
+// WithState allows a map of state key/values to be adapted into a fixture
 func WithState(state map[string]string) WithOption {
 	return WithOption{State: state}
 }
@@ -65,7 +68,7 @@ func WithState(state map[string]string) WithOption {
 // or a state map
 func Adapt(opts ...*WithOption) gdt.Fixture {
 	if len(opts) == 0 {
-		fmt.Panic("gdt.fixtures.Adapt should be called with at least one WithOption")
+		panic("gdt.fixtures.Adapt should be called with at least one WithOption")
 	}
 	res := &simpleFixture{}
 

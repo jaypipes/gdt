@@ -1,0 +1,28 @@
+require:
+ - books_api
+tests:
+ - name: create a new book
+   POST: /books
+   data:
+     title: For Whom The Bell Tolls
+     published_on: 1940-10-21
+     pages: 480
+     author_id: "1"
+     # $authors_by_name['Ernest Hemingway']['ID']
+     publisher_id: "1"
+     # $publishers_by_name["Charles Scribner's Sons"]['ID']
+   response:
+     status: 201
+     headers:
+      - Location
+ - name: look up that created book
+   GET: $LOCATION
+   response:
+     status: 200
+     json:
+       paths:
+         $.author.name: Ernest Hemingway
+         $.publisher.address.state: NY
+       path_formats:
+         $.id: uuid
+

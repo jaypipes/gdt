@@ -1,8 +1,11 @@
 package http
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	nethttp "net/http"
+	"strings"
 	"testing"
 
 	"github.com/jaypipes/gdt"
@@ -18,6 +21,8 @@ type httpTestcaseConfig struct {
 type httpTestcase struct {
 	*gdt.TestFile
 	cfg *httpTestcaseConfig
+	// cache of last HTTP response one of the test units executed
+	PrevResponse *nethttp.Response
 }
 
 func (htc *httpTestcase) BaseURL() string {
@@ -47,6 +52,8 @@ type httpTest struct {
 	method string
 	// HTTP request to execute
 	request *nethttp.Request
+	// JSON-marshaled payload to send in request
+	jsonBody []byte
 	// HTTP Response object to assert on
 	response *response
 	// Specification for expected response
@@ -57,12 +64,30 @@ type httpTest struct {
 func (ht *httpTest) Run(t *testing.T) {
 	var err error
 	baseURL := ht.tc.BaseURL()
-	ht.request, err = http.NewRequest(ht.method, baseURL+ht.url, nil)
+	var body io.Reader
+	if ht.jsonBody != nil {
+		body = bytes.NewReader(ht.jsonBody)
+	}
+	var urlStr string
+	if strings.ToUpper(ht.url) == "$LOCATION" {
+		if ht.tc.PrevResponse == nil {
+			panic("test unit referenced $LOCATION before executing an HTTP request")
+		}
+		url, err := ht.tc.PrevResponse.Location()
+		if err != nil {
+			panic(err)
+		}
+		urlStr = url.String()
+	} else {
+		urlStr = baseURL + ht.url
+	}
+	ht.request, err = http.NewRequest(ht.method, urlStr, body)
 	require.Nil(t, err)
 	c := nethttp.DefaultClient
-	resp, _ := c.Do(ht.request)
-	ht.response = &response{resp}
+	resp, err := c.Do(ht.request)
+	require.Nil(t, err)
 	require.NotNil(t, resp, "Expected nil net/http:Response but got nil")
+	ht.response = &response{resp}
 	t.Run(ht.name, func(t *testing.T) {
 		if ht.responseAssertion != nil {
 			rspec := ht.responseAssertion
@@ -83,6 +108,7 @@ func (ht *httpTest) Run(t *testing.T) {
 			}
 		}
 	})
+	ht.tc.PrevResponse = resp
 }
 
 func (ht *httpTest) assertJSONLength(t *testing.T, exp uint) {
