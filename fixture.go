@@ -25,6 +25,9 @@ func (fr *fixtureRegistry) Register(name string, f Fixture) {
 // Get returns a fixture with a given name or nil if no such fixture was
 // recognized in the fixture registry
 func (fr *fixtureRegistry) Get(name string) Fixture {
+	if fr == nil {
+		return nil
+	}
 	return fr.entries[strings.ToLower(name)]
 }
 

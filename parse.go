@@ -23,21 +23,21 @@ func RegisterParser(
 	}
 }
 
-type testfileSchema struct {
+type fileSchema struct {
 	Type        string   `json:"type"`
 	Name        string   `json:"name"`
 	Description string   `json:"description"`
 	Require     []string `json:"require"`
 }
 
-// Parse reads a supplied file and parses it into a GDT TestFile
+// Parse reads a supplied file and parses it into a GDT File
 //
 // We do a double-parse of the test file. The first pass determines the
 // type of test by simply looking for a "type" top-level element in the
 // YAML. If no "type" element was found, the test type defaults to HTTP.
 // Once the type is determined, then the test case module (e.g. gdt/http)
 // is called to parse the file into the case type-specific schema
-func Parse(ctx *context, path string) (Runnable, error) {
+func Parse(ctx *Context, path string) (Runnable, error) {
 	f, err := os.Open(path)
 
 	if err != nil {
@@ -48,7 +48,7 @@ func Parse(ctx *context, path string) (Runnable, error) {
 	if err != nil {
 		return nil, err
 	}
-	tfs := testfileSchema{}
+	tfs := fileSchema{}
 	if err = yaml.Unmarshal(contents, &tfs); err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func Parse(ctx *context, path string) (Runnable, error) {
 		return nil, ErrUnknownParser
 	}
 
-	tf := &TestFile{
+	tf := &file{
 		ctx:         ctx,
 		typ:         strings.ToLower(tfs.Type),
 		path:        filepath.Base(path),

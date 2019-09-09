@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-// TestSuite contains zero or more Runnable things, one for each YAML file in a
+// suite contains zero or more Runnable things, one for each YAML file in a
 // given directory
-type TestSuite struct {
+type suite struct {
 	// path is the filepath to the test suite directory
 	path string
 	// Name for the test suite
@@ -18,13 +18,13 @@ type TestSuite struct {
 }
 
 // Append appends a runnable test element to the test suite
-func (ts *TestSuite) Append(r Runnable) {
-	ts.units = append(ts.units, r)
+func (s *suite) Append(r Runnable) {
+	s.units = append(s.units, r)
 }
 
 // Run executes the tests in the test case
-func (ts *TestSuite) Run(t *testing.T) {
-	for _, unit := range ts.units {
+func (s *suite) Run(t *testing.T) {
+	for _, unit := range s.units {
 		unit.Run(t)
 	}
 }

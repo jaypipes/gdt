@@ -1,8 +1,9 @@
 package gdt
 
-// context contains fixtures and other state that is passed to the Parse
+// Context contains fixtures and other state that is passed to the Parse
 // function
-type context struct {
-	// the fixture registry used by the test cases
-	fr FixtureRegistry
+type Context struct {
+	// FixtureRegistry is a pointer to the fixture registry used by the test
+	// files
+	Fixtures FixtureRegistry
 }

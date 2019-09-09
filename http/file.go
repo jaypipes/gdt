@@ -12,31 +12,30 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type httpTestFileConfig struct {
+type httpFileConfig struct {
 	baseURL string
 }
 
-// httpTestFile wraps gdt.TestFile and adapts it for specialization of groups
-// of tests of HTTP APIs
-type httpTestFile struct {
-	*gdt.TestFile
-	cfg *httpTestFileConfig
+// httpFile contains groups of tests of HTTP APIs
+type httpFile struct {
+	ctx *gdt.Context
+	cfg *httpFileConfig
 	// cache of last HTTP response one of the test units executed
 	PrevResponse *nethttp.Response
 }
 
 // BaseURL returns the base URL to use when constructing HTTP requests
-func (htf *httpTestFile) BaseURL() string {
-	// If the httpTestFile has been manually configured and the configuration
+func (hf *httpFile) BaseURL() string {
+	// If the httpFile has been manually configured and the configuration
 	// contains a base URL, use that. Otherwise, check to see if there is a
 	// fixture in the registry that has an "http.base_url" state key and use
 	// that if found.
-	if htf.cfg != nil && htf.cfg.baseURL != "" {
-		return htf.cfg.baseURL
+	if hf.cfg != nil && hf.cfg.baseURL != "" {
+		return hf.cfg.baseURL
 	}
 	// query the fixture registry to determine if any of them contain an
 	// http.base_url state attribute.
-	for _, f := range htf.Fixtures() {
+	for _, f := range hf.ctx.Fixtures.List() {
 		if f.HasState(FIXTURE_STATE_KEY_BASE_URL) {
 			return f.State(FIXTURE_STATE_KEY_BASE_URL)
 		}
@@ -47,7 +46,7 @@ func (htf *httpTestFile) BaseURL() string {
 // httpTest represents a single HTTP request and response pair along with
 // expectations/assertions for the response components
 type httpTest struct {
-	tf *httpTestFile
+	f *httpFile
 	// Name for the individual HTTP call test
 	name string
 	// Description of the test (defaults to Name)
@@ -62,34 +61,39 @@ type httpTest struct {
 	responseAssertion *responseAssertion
 }
 
+// getURL returns the URL to use for the test's HTTP request. The test's url
+// field is first queried to see if it is the special $LOCATION string. If it
+// is, then we return the previous HTTP response's Location header. Otherwise,
+// we construct the URL from the httpFile's base URL and the test's url field.
 func (ht *httpTest) getURL() string {
 	if strings.ToUpper(ht.url) == "$LOCATION" {
-		if ht.tf.PrevResponse == nil {
+		if ht.f.PrevResponse == nil {
 			panic("test unit referenced $LOCATION before executing an HTTP request")
 		}
-		url, err := ht.tf.PrevResponse.Location()
+		url, err := ht.f.PrevResponse.Location()
 		if err != nil {
 			panic(err)
 		}
 		return url.String()
 	}
-	baseURL := ht.tf.BaseURL()
+	baseURL := ht.f.BaseURL()
 	return baseURL + ht.url
 }
 
-// Run executes the test described by the HTTP test
+// Run executes the test described by the HTTP test. A new HTTP request and
+// response pair is created during this call.
 func (ht *httpTest) Run(t *testing.T) {
 	var body io.Reader
 	if ht.jsonBody != nil {
 		body = bytes.NewReader(ht.jsonBody)
 	}
-	req, err := http.NewRequest(ht.method, ht.getURL(), body)
-	require.Nil(t, err)
-	c := nethttp.DefaultClient
-	resp, err := c.Do(req)
-	require.Nil(t, err)
-	require.NotNil(t, resp, "Expected nil net/http:Response but got nil")
 	t.Run(ht.name, func(t *testing.T) {
+		req, err := http.NewRequest(ht.method, ht.getURL(), body)
+		require.Nil(t, err)
+		c := nethttp.DefaultClient
+		resp, err := c.Do(req)
+		require.Nil(t, err)
+		require.NotNil(t, resp, "Expected nil net/http:Response but got nil")
 		if ht.responseAssertion != nil {
 			rspec := ht.responseAssertion
 
@@ -115,6 +119,6 @@ func (ht *httpTest) Run(t *testing.T) {
 				}
 			}
 		}
+		ht.f.PrevResponse = resp
 	})
-	ht.tf.PrevResponse = resp
 }

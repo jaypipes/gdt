@@ -18,8 +18,8 @@ func From(path string) (Runnable, error) {
 	}
 	defer f.Close()
 
-	ctx := &context{
-		fr: Fixtures,
+	ctx := &Context{
+		Fixtures: Fixtures,
 	}
 
 	fi, err := f.Stat()
@@ -30,7 +30,7 @@ func From(path string) (Runnable, error) {
 		{
 			// List YAML files in the directory and parse each into a testable unit
 			var files []string
-			s := &TestSuite{
+			s := &suite{
 				path: path,
 				// TODO(jaypipes): Allows name/description of suite
 				name:        path,

@@ -53,18 +53,18 @@ type httpParser struct{}
 // Parse accepts a Testcase and a string of YAML contents from a gdt test file.
 // It then parses the HTTP test case and adds the HTTP-specific tests to the
 // supplied Testcase
-func (p *httpParser) Parse(tf *gdt.TestFile, contents []byte) error {
+func (p *httpParser) Parse(ca gdt.ContextAppendable, contents []byte) error {
 	var err error
 	tcs := httpTestcaseSchema{}
 	if err = yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
-	htf := &httpTestFile{
-		tf, nil, nil,
+	hf := &httpFile{
+		ca.Context(), nil, nil,
 	}
 	for _, tspec := range tcs.Specs {
 		ht := httpTest{
-			tf:                htf,
+			f:                 hf,
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
 		}
@@ -92,7 +92,7 @@ func (p *httpParser) Parse(tf *gdt.TestFile, contents []byte) error {
 			ht.url = tspec.URL
 			ht.method = method
 		}
-		tf.Append(&ht)
+		ca.Append(&ht)
 	}
 	return nil
 }

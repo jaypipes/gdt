@@ -20,8 +20,8 @@ type FixtureRegistry interface {
 // Parser is the driver interface for parsers of different types of tests
 type Parser interface {
 	// Parse the supplied raw contents and append any elements to the supplied
-	// Appendable
-	Parse(tf *TestFile, contents []byte) error
+	// ContextAppendable
+	Parse(ca ContextAppendable, contents []byte) error
 }
 
 // Runnable represents things that have a simple Run() method that accepts a
@@ -34,4 +34,10 @@ type Runnable interface {
 // Appendable simply allows some runnable thing to be added to it
 type Appendable interface {
 	Append(Runnable)
+}
+
+// ContextAppendable is an Appendable that can return a Context
+type ContextAppendable interface {
+	Appendable
+	Context() *Context
 }
