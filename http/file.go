@@ -90,10 +90,11 @@ func (ht *httpTest) Run(t *testing.T) {
 	t.Run(ht.name, func(t *testing.T) {
 		req, err := http.NewRequest(ht.method, ht.getURL(), body)
 		require.Nil(t, err)
+		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
+		// TLS, etc
 		c := nethttp.DefaultClient
 		resp, err := c.Do(req)
 		require.Nil(t, err)
-		require.NotNil(t, resp, "Expected nil net/http:Response but got nil")
 		if ht.responseAssertion != nil {
 			rspec := ht.responseAssertion
 
@@ -104,6 +105,9 @@ func (ht *httpTest) Run(t *testing.T) {
 			if rspec.JSON != nil {
 				if rspec.JSON.Length != nil {
 					assertJSONLen(t, resp, *(rspec.JSON.Length))
+				}
+				if len(rspec.JSON.Paths) > 0 {
+					assertJSONPaths(t, resp, rspec.JSON.Paths)
 				}
 			}
 
