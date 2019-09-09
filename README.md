@@ -33,8 +33,10 @@ prone to bit-rot due to its high maintenance cost. This is particularly true
 for code that verifies an application's integration points with *other*
 applications via an API.
 
-The idea behind `gdt` is to allow test authors to cleanly and clearly describe
-a functional test's assumptions and assertions in a declarative format.
+The idea behind `gdt` is to allow test authors to **cleanly** and **clearly**
+describe a functional test's **assumptions** and **assertions** in a
+declarative format.
+
 Separating the *description* of a test's assumptions (setup) and assertions
 from the Golang code that actually performs the test assertions leads to tests
 that are easier to read and understand. This allows developers to spend *more
@@ -88,7 +90,7 @@ tests:
 When using Ginkgo, developers create tests for a particular module (say, the
 `books` module) by creating a `books_test.go` file and calling some Ginkgo
 functions in a BDD test style. A sample Ginkgo test might look something like
-this ([`examples/books/api/types_test.go`](examples/books/api/types_test.go)):
+this ([`types_test.go`](examples/books/api/types_test.go)):
 
 ```go
 package api_test
@@ -144,7 +146,7 @@ This is perfectly great for simple unit tests of Golang code. However, once the
 tests begin to call multiple APIs or packages, the Ginkgo Golang tests start to
 get cumbersome. Consider the following example of *functionally* testing the
 failure modes for a simple HTTP REST API endpoint
-([`examples/books/api/failure_test.go`](examples/books/api/failure_test.go)):
+([`failure_test.go`](examples/books/api/failure_test.go)):
 
 
 ```go
@@ -260,7 +262,7 @@ var _ = Describe("Books API - GET /books failures", func() {
 The above test code obscures what is being tested by cluttering the test
 assertions with the Golang closures and accessor code. Compare the above with
 how `gdt` allows the test author to describe the same assertions
-([`examples/books/api/tests/failures.yaml`](examples/books/tests/api/failures.yaml)):
+([`failures.yaml`](examples/books/tests/api/failures.yaml)):
 
 ```yaml
 require:
@@ -286,15 +288,15 @@ No more closures and boilerplate function code getting in the way of expressing
 the assertions, which should be the focus of the test.
 
 The more intricate the assertions being verified by the test, generally the
-more verbose and cumbersome the Golang test code becomes. First and foremost,
-tests should be *readable*. If they are not readable, then the test's
+more verbose and cumbersome the Golang test code tends to become. First and
+foremost, tests should be *readable*. If they are not readable, then the test's
 assertions are not *understandable*. And tests that cannot easily be understood
 are often the source of bit rot and technical debt. Worse, tests that aren't
 understandable stand a greater chance of having an improper assertion go
 undiscovered, leading to tests that validate the wrong behaviour or don't
 validate the correct behaviour.
 
-Consider a Ginkgo Golang test case that checks the following behaviour:
+Consider a Ginkgo test case that checks the following behaviour:
 
 * When a book is created via a call to `POST /books`, we are able to get book
  information from the link returned in the HTTP response's `Location` header
@@ -302,7 +304,7 @@ Consider a Ginkgo Golang test case that checks the following behaviour:
 * The newly-created book's ID field is a valid UUID
 * The newly-created book's publisher has an address containing a known state code
 
-A typical implementation of a Ginkgo Golang test might look like this ([`examples/books/api/create_then_get_test.go`](examples/books/api/create_then_get_test.go)):
+A typical implementation of a Ginkgo Golang test might look like this ([`create_then_get_test.go`](examples/books/api/create_then_get_test.go)):
 
 ```go
 package api_test
@@ -383,7 +385,7 @@ var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
 
 Compare the above test code to the following YAML document that a `gdt` user
 might create to describe the same assertions 
-(`examples/books/tests/create_then_get.yaml`):
+([`create_then_get.yaml`](examples/books/tests/api/create_then_get.yaml)):
 
 ```yaml
 require:
