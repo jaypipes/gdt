@@ -12,8 +12,8 @@ const (
 	msgHTTPStatus   = "Expected HTTP response to have status code of %d but got %d"
 	msgJSONLength   = "Expected HTTP response to have JSON length of %d but got %d"
 	msgStringInBody = "Expected HTTP response to contain %s"
-	msgHeaderIn     = "Expected header %s to be in response"
-	msgHeaderValue  = "Expected header with value %s to be in response"
+	msgHeaderIn     = "Expected HTTP header %s to be in response"
+	msgHeaderValue  = "Expected HTTP header with value %s to be in response"
 )
 
 func assertHTTPStatusEqual(t *testing.T, r *nethttp.Response, exp int) {

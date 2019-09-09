@@ -3,8 +3,13 @@ package http
 import (
 	nethttp "net/http"
 	"net/http/httptest"
+	"strings"
 
 	"github.com/jaypipes/gdt"
+)
+
+const (
+	FIXTURE_STATE_KEY_BASE_URL = "http.base_url"
 )
 
 type httpServerFixture struct {
@@ -21,14 +26,14 @@ func (f *httpServerFixture) Stop() {
 }
 
 func (f *httpServerFixture) HasState(key string) bool {
-	if key == "http.base_url" {
+	if strings.ToLower(key) == FIXTURE_STATE_KEY_BASE_URL {
 		return true
 	}
 	return false
 }
 
 func (f *httpServerFixture) State(key string) string {
-	if key == "http.base_url" {
+	if strings.ToLower(key) == FIXTURE_STATE_KEY_BASE_URL {
 		return f.server.URL
 	}
 	return ""

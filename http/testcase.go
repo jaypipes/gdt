@@ -29,10 +29,10 @@ func (htc *httpTestcase) BaseURL() string {
 		return htc.cfg.baseURL
 	}
 	// query the fixture registry to determine if any of them contain an
-	// http.baseurl state attribute.
+	// http.base_url state attribute.
 	for _, f := range htc.Fixtures() {
-		if f.HasState("http.base_url") {
-			return f.State("http.base_url")
+		if f.HasState(FIXTURE_STATE_KEY_BASE_URL) {
+			return f.State(FIXTURE_STATE_KEY_BASE_URL)
 		}
 	}
 	return ""
