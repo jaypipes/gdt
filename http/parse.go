@@ -59,12 +59,12 @@ func (p *httpParser) Parse(tf *gdt.TestFile, contents []byte) error {
 	if err = yaml.Unmarshal(contents, &tcs); err != nil {
 		return err
 	}
-	tc := &httpTestcase{
+	htf := &httpTestFile{
 		tf, nil, nil,
 	}
 	for _, tspec := range tcs.Specs {
 		ht := httpTest{
-			tc:                tc,
+			tf:                htf,
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
 		}
