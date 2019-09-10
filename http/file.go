@@ -3,6 +3,7 @@ package http
 import (
 	"bytes"
 	"io"
+	"io/ioutil"
 	"net/http"
 	nethttp "net/http"
 	"strings"
@@ -96,24 +97,23 @@ func (ht *httpTest) Run(t *testing.T) {
 		resp, err := c.Do(req)
 		require.Nil(t, err)
 		if ht.responseAssertion != nil {
-			rspec := ht.responseAssertion
+			// Only read the response body contents once and pass the byte
+			// buffer to the assertion functions
+			b, err := ioutil.ReadAll(resp.Body)
+			require.Nil(t, err)
 
+			rspec := ht.responseAssertion
 			if rspec.Status != nil {
 				assertHTTPStatusEqual(t, resp, *(rspec.Status))
 			}
 
 			if rspec.JSON != nil {
-				if rspec.JSON.Length != nil {
-					assertJSONLen(t, resp, *(rspec.JSON.Length))
-				}
-				if len(rspec.JSON.Paths) > 0 {
-					assertJSONPaths(t, resp, rspec.JSON.Paths)
-				}
+				assertJSON(t, resp, b, rspec.JSON)
 			}
 
 			if len(rspec.Strings) > 0 {
 				for _, exp := range rspec.Strings {
-					assertStringInBody(t, resp, exp)
+					assertStringInBody(t, resp, b, exp)
 				}
 			}
 

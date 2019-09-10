@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	nethttp "net/http"
 	"strings"
 	"testing"
@@ -29,18 +28,9 @@ func assertHTTPStatusEqual(t *testing.T, r *nethttp.Response, exp int) {
 	assert.Equal(t, exp, got, msgHTTPStatus, exp, got)
 }
 
-func assertJSONLen(t *testing.T, r *nethttp.Response, exp uint) {
+func assertStringInBody(t *testing.T, r *nethttp.Response, b []byte, exp string) {
 	t.Helper()
-	response := response{r}
-	got := response.JSON()
-	assert.Equal(t, exp, uint(len(got)), msgJSONLength, exp, len(got))
-}
-
-func assertStringInBody(t *testing.T, r *nethttp.Response, exp string) {
-	t.Helper()
-	response := response{r}
-	got := response.Text()
-	assert.Contains(t, got, exp, msgStringInBody, exp)
+	assert.Contains(t, string(b), exp, msgStringInBody, exp)
 }
 
 func assertHeader(t *testing.T, r *nethttp.Response, exp string) {
@@ -62,12 +52,29 @@ func assertHeader(t *testing.T, r *nethttp.Response, exp string) {
 	}
 }
 
-func assertJSONPaths(t *testing.T, r *nethttp.Response, paths map[string]string) {
+func assertJSON(t *testing.T, r *nethttp.Response, b []byte, jspec *jsonAssertion) {
 	t.Helper()
-	b, err := ioutil.ReadAll(r.Body)
-	require.Nil(t, err)
+	if jspec.Length != nil {
+		// An error may have been returned as plain/text. In this case, we
+		// don't want to check the length of the JSON-serialized body
+		if strings.HasPrefix(r.Header.Get("content-type"), "application/json") {
+			assertJSONLen(t, r, b, *(jspec.Length))
+		}
+	}
+	if len(jspec.Paths) > 0 {
+		assertJSONPaths(t, r, b, jspec.Paths)
+	}
+}
+
+func assertJSONLen(t *testing.T, r *nethttp.Response, b []byte, exp uint) {
+	t.Helper()
+	assert.Equal(t, exp, uint(len(b)), msgJSONLength, exp, len(b))
+}
+
+func assertJSONPaths(t *testing.T, r *nethttp.Response, b []byte, paths map[string]string) {
+	t.Helper()
 	v := interface{}(nil)
-	err = json.Unmarshal(b, &v)
+	err := json.Unmarshal(b, &v)
 	require.Nil(t, err, msgJSONUnmarshalError, err)
 	for path, expVal := range paths {
 		assertJSONPath(t, r, path, expVal, v)
