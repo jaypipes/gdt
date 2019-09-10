@@ -416,3 +416,23 @@ tests:
        path_formats:
          $.id: uuid4
 ```
+
+## `gdt` test file structure
+
+All gdt test files contain YAML. All `gdt` test files, regardless of their type
+(see below), have the following attributes:
+
+* `name`: (optional) string describing the contents of the test file. If
+  missing or empty, the filename is used as the name
+* `description`: (optional) string with longer description of the test file
+  contents
+* `type`: (optional) string indicating the type of tests contained in the file.
+  `gdt` looks up a test file parser that understands this type of test.
+  Defaults to "http"
+* `requires`: (optional) list of strings indicating fixtures that will be
+  started before any of the tests in the file are run
+
+Depending on the `type` of the test, a parser is invoked to interpret the test
+file according to that particular type of test. See the documentation for the
+[`gdt.http`](http/README.md) test type for an example of how different types of
+tests are handled by an extensible parsing system in `gdt`.
