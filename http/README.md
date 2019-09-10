@@ -68,9 +68,22 @@ tests:
          $.author.name: Ernest Hemingway
          $.publisher.address.state: NY
        path_formats:
-         $.id: uuid
+         $.id: uuid4
 ```
 
 ### `$LOCATION`
+
+TODO(jaypipes)
+
+### Response assertions
+
+TODO(jaypipes)
+#### Checking for a string in response body
+
+TODO(jaypipes)
+#### Checking for an HTTP header
+
+TODO(jaypipes)
+#### Checking for JSON in response
 
 TODO(jaypipes)

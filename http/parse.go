@@ -10,8 +10,9 @@ import (
 )
 
 type jsonAssertion struct {
-	Length *uint             `json:"length"`
-	Paths  map[string]string `json:"paths"`
+	Length      *uint             `json:"length"`
+	Paths       map[string]string `json:"paths"`
+	PathFormats map[string]string `json:"path_formats"`
 }
 
 type responseAssertion struct {

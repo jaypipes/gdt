@@ -16,10 +16,12 @@ const (
 	msgJSONLength          = "Expected HTTP response to have JSON length of %d but got %d"
 	msgJSONUnmarshalError  = "Failed to unmarshal JSON: %s"
 	msgJSONPathError       = "Failed to find JSONPath %s: %s"
-	msgJSONPathStringValue = "Expected string value %s but got JSONPath value %v which is not convertable to string"
+	msgJSONPathStringValue = "Expected string value at JSONPath %s but got JSONPath value %v which is not convertable to string"
 	msgStringInBody        = "Expected HTTP response to contain %s"
 	msgHeaderIn            = "Expected HTTP header %s to be in response"
 	msgHeaderValue         = "Expected HTTP header with value %s to be in response"
+	msgFormatInvalid       = "Unknown format %s in test"
+	msgFormatBad           = "Expected %s to be formatted as %s"
 )
 
 func assertHTTPStatusEqual(t *testing.T, r *nethttp.Response, exp int) {
@@ -64,6 +66,9 @@ func assertJSON(t *testing.T, r *nethttp.Response, b []byte, jspec *jsonAssertio
 	if len(jspec.Paths) > 0 {
 		assertJSONPaths(t, r, b, jspec.Paths)
 	}
+	if len(jspec.PathFormats) > 0 {
+		assertJSONPathFormats(t, r, b, jspec.PathFormats)
+	}
 }
 
 func assertJSONLen(t *testing.T, r *nethttp.Response, b []byte, exp uint) {
@@ -86,6 +91,27 @@ func assertJSONPath(t *testing.T, r *nethttp.Response, path string, exp string, 
 	got, err := jsonpath.Get(path, v)
 	require.Nil(t, err, msgJSONPathError, path, err)
 	gotStr, ok := got.(string)
-	assert.True(t, ok, msgJSONPathStringValue, exp, got)
+	assert.True(t, ok, msgJSONPathStringValue, path, got)
 	assert.Equal(t, exp, gotStr)
+}
+
+func assertJSONPathFormats(t *testing.T, r *nethttp.Response, b []byte, pathFormats map[string]string) {
+	t.Helper()
+	v := interface{}(nil)
+	err := json.Unmarshal(b, &v)
+	require.Nil(t, err, msgJSONUnmarshalError, err)
+	for path, format := range pathFormats {
+		assertJSONPathFormat(t, r, path, format, v)
+	}
+}
+
+func assertJSONPathFormat(t *testing.T, r *nethttp.Response, path string, format string, v interface{}) {
+	t.Helper()
+	got, err := jsonpath.Get(path, v)
+	require.Nil(t, err, msgJSONPathError, path, err)
+	gotStr, ok := got.(string)
+	assert.True(t, ok, msgJSONPathStringValue, path, got)
+	ok, err = isFormatted(format, gotStr)
+	require.Nil(t, err, msgFormatInvalid, format)
+	assert.True(t, ok, msgFormatBad, format, gotStr)
 }
