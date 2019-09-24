@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/ghodss/yaml"
 
@@ -35,6 +34,12 @@ type testSpec struct {
 	GET string `json:"GET"`
 	// Shortcut for URL and Method of "POST"
 	POST string `json:"POST"`
+	// Shortcut for URL and Method of "PUT"
+	PUT string `json:"PUT"`
+	// Shortcut for URL and Method of "PATCH"
+	PATCH string `json:"PATCH"`
+	// Shortcut for URL and Method of "DELETE"
+	DELETE string `json:"DELETE"`
 	// JSON payload to send along in request
 	Data interface{} `json:"data"`
 	// Specification for expected response
@@ -76,25 +81,31 @@ func (p *httpParser) Parse(ca gdt.ContextAppendable, contents []byte) error {
 				return err
 			}
 		}
-		if tspec.URL == "" {
-			if tspec.GET != "" {
-				ht.url = tspec.GET
-				ht.method = "GET"
-			} else if tspec.POST != "" {
-				ht.url = tspec.POST
-				ht.method = "POST"
-			} else {
-				return fmt.Errorf("Either specify a URL, GET or POST attribute")
-			}
-		} else {
-			method := tspec.Method
-			if method == "" {
-				return fmt.Errorf("When specifying url in HTTP test spec, please specify an HTTP method")
-			}
-			ht.url = tspec.URL
-			ht.method = method
+		ht.method, ht.url, err := parseMethodAndURL(tspec)
+		if err != nil {
+			return err
 		}
 		ca.Append(&ht)
 	}
 	return nil
+}
+
+func parseMethodAndURL(tspec *testSpec) (string, string, error) {
+	if tspec.URL == "" {
+		if tspec.GET != "" {
+			return "GET", tspec.GET, nil
+		} else if tspec.POST != "" {
+			return "POST", tspec.POST, nil
+		} else if tspec.PUT != "" {
+			return "PUT", tspec.PUT, nil
+		} else if tspec.DELETE != "" {
+			return "DELETE", tspec.DELETE, nil
+		} else {
+			return "", "", ErrInvalidAliasOrURL
+		}
+	} 
+	if tspec.Method == "" {
+		return "", "", ErrInvalidAliasOrURL
+	}
+	return tspec.Method, tspec.URL, nil
 }
