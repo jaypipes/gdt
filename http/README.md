@@ -54,6 +54,8 @@ The `response` object has the following attributes:
 
 The `json` object has the following attributes:
 
+* `length`: (optional) integer representing the number of bytes in the
+ resulting JSON object after successfully parsing the HTTP response body
 * `paths`: (optional) map of strings where the keys of the map are JSONPath
   expressions and the values of the map are the expected value to be found when
   evaluating the JSONPath expression
@@ -123,7 +125,13 @@ The currently supported format strings are:
 
 ### `$LOCATION`
 
-TODO(jaypipes)
+The `url` attribute of an HTTP test spec can be the string `$LOCATION`. When
+this is set, the HTTP request will be to the URL specified in the *previous
+HTTP response's* Location HTTP header. This is an easy shortcut for testing a
+series of ordered HTTP requests, where the first HTTP request (typically a
+`POST` or `PUT` to a particular resource) responds with a Location HTTP header
+pointing to a URL that can have issued an HTTP `GET` request to return
+information about the previously created or mutated resource.
 
 ### Response assertions
 
