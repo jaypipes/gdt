@@ -1,8 +1,6 @@
 package http
 
 import (
-	"encoding/json"
-
 	"github.com/ghodss/yaml"
 
 	"github.com/jaypipes/gdt"
@@ -74,14 +72,9 @@ func (p *httpParser) Parse(ca gdt.ContextAppendable, contents []byte) error {
 			f:                 hf,
 			name:              tspec.Name,
 			responseAssertion: tspec.Response,
+			data:              tspec.Data,
 		}
-		if tspec.Data != nil {
-			ht.jsonBody, err = json.Marshal(tspec.Data)
-			if err != nil {
-				return err
-			}
-		}
-		ht.method, ht.url, err := parseMethodAndURL(tspec)
+		ht.method, ht.url, err = parseMethodAndURL(tspec)
 		if err != nil {
 			return err
 		}
@@ -103,7 +96,7 @@ func parseMethodAndURL(tspec *testSpec) (string, string, error) {
 		} else {
 			return "", "", ErrInvalidAliasOrURL
 		}
-	} 
+	}
 	if tspec.Method == "" {
 		return "", "", ErrInvalidAliasOrURL
 	}

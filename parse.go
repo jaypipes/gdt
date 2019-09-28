@@ -63,19 +63,12 @@ func Parse(ctx *Context, path string) (Runnable, error) {
 		path:        filepath.Base(path),
 		name:        tfs.Name,
 		description: tfs.Description,
+		require:     tfs.Require,
 	}
 
 	err = parser.Parse(tf, contents)
 	if err != nil {
 		return nil, err
-	}
-
-	if len(tfs.Require) > 0 {
-		tf.before = make(map[string][]string, len(tfs.Require))
-		// TODO(jaypipes): Parse a function-call interface from string...
-		for _, elem := range tfs.Require {
-			tf.before[elem] = []string{}
-		}
 	}
 
 	return tf, nil

@@ -2,15 +2,23 @@ package http
 
 import (
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 	nethttp "net/http"
+	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/jaypipes/gdt"
 	"github.com/stretchr/testify/require"
+)
+
+var (
+	errExpectedLocationHeader = errors.New("Expected Location HTTP Header in previous response")
 )
 
 type httpFileConfig struct {
@@ -44,6 +52,60 @@ func (hf *httpFile) BaseURL() string {
 	return ""
 }
 
+// processRequestDataMap processes a map pointed to by v, transforming any
+// string keys or values of the map into the results of calling the fixture
+// set's State() method.
+func (hf *httpFile) preprocessMap(
+	m reflect.Value, kt reflect.Type, vt reflect.Type,
+) error {
+	it := m.MapRange()
+	for it.Next() {
+		if kt.Kind() == reflect.String {
+			keyStr := it.Key().String()
+			for _, f := range hf.ctx.Fixtures.List() {
+				if !f.HasState(keyStr) {
+					continue
+				}
+				trKeyStr := f.State(keyStr)
+				keyStr = trKeyStr
+			}
+
+			val := it.Value()
+			err := hf.preprocessMapValue(m, reflect.ValueOf(keyStr), val, val.Type())
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (hf *httpFile) preprocessMapValue(m reflect.Value, k reflect.Value, v reflect.Value, vt reflect.Type) error {
+	if vt.Kind() == reflect.Interface {
+		v = v.Elem()
+		vt = v.Type()
+	}
+
+	switch vt.Kind() {
+	case reflect.Array:
+		fmt.Printf("map element is an array.\n")
+	case reflect.Map:
+		return hf.preprocessMap(v, vt.Key(), vt.Elem())
+	case reflect.String:
+		valStr := v.String()
+		for _, f := range hf.ctx.Fixtures.List() {
+			if !f.HasState(valStr) {
+				continue
+			}
+			trValStr := f.State(valStr)
+			m.SetMapIndex(k, reflect.ValueOf(trValStr))
+		}
+	default:
+		return nil
+	}
+	return nil
+}
+
 // httpTest represents a single HTTP request and response pair along with
 // expectations/assertions for the response components
 type httpTest struct {
@@ -56,8 +118,10 @@ type httpTest struct {
 	url string
 	// HTTP Method specified by HTTP client
 	method string
-	// JSON-marshaled payload to send in request
-	jsonBody []byte
+	// Data to send in the request, typically serialized as JSON. This data is
+	// pre-processed to replace values that look like JSONPath expressions with
+	// fixture data.
+	data interface{}
 	// Specification for expected response
 	responseAssertion *responseAssertion
 }
@@ -66,30 +130,62 @@ type httpTest struct {
 // field is first queried to see if it is the special $LOCATION string. If it
 // is, then we return the previous HTTP response's Location header. Otherwise,
 // we construct the URL from the httpFile's base URL and the test's url field.
-func (ht *httpTest) getURL() string {
+func (ht *httpTest) getURL() (string, error) {
 	if strings.ToUpper(ht.url) == "$LOCATION" {
 		if ht.f.PrevResponse == nil {
 			panic("test unit referenced $LOCATION before executing an HTTP request")
 		}
 		url, err := ht.f.PrevResponse.Location()
 		if err != nil {
-			panic(err)
+			return "", errExpectedLocationHeader
 		}
-		return url.String()
+		return url.String(), nil
 	}
 	baseURL := ht.f.BaseURL()
-	return baseURL + ht.url
+	return baseURL + ht.url, nil
+}
+
+// processRequestData looks through the raw data interface{} that was
+// unmarshaled during parse for any string values that look like JSONPath
+// expressions. If we find any, we query the fixture registry to see if any
+// fixtures have a value that matches the JSONPath expression. See
+// gdt.fixtures:jsonFixture for more information on how this works
+func (ht *httpTest) processRequestData() {
+	if ht.data == nil {
+		return
+	}
+
+	// Get a pointer to the unmarshaled interface{} so we can mutate the
+	// contents pointed to
+	p := reflect.ValueOf(&ht.data)
+
+	// We're interested in the value pointed to by the interface{}, which is
+	// why we do a double Elem() here.
+	v := p.Elem().Elem()
+	vt := v.Type()
+
+	switch vt.Kind() {
+	case reflect.Array:
+		fmt.Printf("top-level unmarshaled content is an array.\n")
+	case reflect.Map:
+		ht.f.preprocessMap(v, vt.Key(), vt.Elem())
+	}
 }
 
 // Run executes the test described by the HTTP test. A new HTTP request and
 // response pair is created during this call.
 func (ht *httpTest) Run(t *testing.T) {
 	var body io.Reader
-	if ht.jsonBody != nil {
-		body = bytes.NewReader(ht.jsonBody)
+	if ht.data != nil {
+		ht.processRequestData()
+		jsonBody, err := json.Marshal(ht.data)
+		require.Nil(t, err)
+		body = bytes.NewReader(jsonBody)
 	}
 	t.Run(ht.name, func(t *testing.T) {
-		req, err := http.NewRequest(ht.method, ht.getURL(), body)
+		url, err := ht.getURL()
+		require.Nil(t, err)
+		req, err := http.NewRequest(ht.method, url, body)
 		require.Nil(t, err)
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
