@@ -390,8 +390,7 @@ might create to describe the same assertions
 ```yaml
 require:
  - books_api
- - authors_by_name
- - publishers_by_name
+ - books_data
 tests:
  - name: create a new book
    POST: /books
@@ -399,8 +398,8 @@ tests:
      title: For Whom The Bell Tolls
      published_on: 1940-10-21
      pages: 480
-     author_id: $authors_by_name['Ernest Hemingway']['ID']
-     publisher_id: $publishers_by_name["Charles Scribner's Sons"]['ID']
+     author_id: $.authors.by_name["Ernest Hemingway"].id
+     publisher_id: $.publishers.by_name["Charles Scribner's Sons"].id
    response:
      status: 201
      headers:
