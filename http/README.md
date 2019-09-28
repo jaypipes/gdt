@@ -41,7 +41,7 @@ Each of the test unit objects have the following attributes:
   * `PATCH`: (optional) string with the path or URL to issue an HTTP PATCH request
   * `DELETE`: (optional) string with the path or URL to issue an HTTP DELETE request
 * `data`: (optional) if present, will be encoded into the HTTP request
-  payload. Elements of the `data` structure may be JSONPath expressions (see [below](#jsonpath-fixture-data))
+  payload. Elements of the `data` structure may be JSONPath expressions (see [below](#use-jsonpath-expressions-to-substitute-fixture-data))
 * `response`: (optional) object describing the **assertions** to make about the
   HTTP response received after issuing the HTTP request
 
@@ -101,15 +101,15 @@ The above `data` would be encoded into the following HTTP request body:
 
 ```json
 {
-     "title": "For Whom The Bell Tolls"
-     "published_on": "1940-10-21
-     "pages": 480
-     "author_id": "1"
+     "title": "For Whom The Bell Tolls",
+     "published_on": "1940-10-21",
+     "pages": 480,
+     "author_id": "1",
      "publisher_id": "1"
 }
 ```
 
-#### Use JSONPath expressions to substitute fixture data {#jsonpath-fixture-data}
+#### Use JSONPath expressions to substitute fixture data
 
 Often, you will want to reference some information in a fixture instead of
 hard-coding values in the `data` contents.
@@ -137,6 +137,10 @@ It would be much more readable if we could replace those hard-coded `"1"`
 values with a reference to some fixture data:
 
 ```yaml
+requires:
+ - books_api
+ - books_data
+tests:
  - name: create a new book
    POST: /books
    data:
@@ -152,6 +156,83 @@ values with a reference to some fixture data:
 The test reader can now better understand what value is being placed into the
 "author_id" field of the HTTP request payload: the ID value of the author whose
 name is "Ernest Hemingway".
+
+The JSONPath expressions that replaced the hard-coded `"1"` values are
+evaluated by the fixtures associated with a test file. The
+A `gdt.fixtures.JSONFixture` fixture is designed to evaluate JSONPath
+expressions for the data defined in the fixture.
+
+Assume I have a file `testdata/fixtures.json` that looks like this:
+
+```json
+{
+    "books": [
+        {
+            "id": "12ac1b94-5667-461e-80cb-ba8619cae61a",
+            "title": "Old Man and the Sea",
+            "published_on": "1952-10-01",
+            "pages": 127,
+            "author": {
+                "name": "Ernest Hemingway",
+                "id": "1"
+            },
+            "publisher": {
+                "name": "Charles Scribner's Sons",
+                "id": "1",
+                "address": {
+                    "address": "153–157 Fifth Avenue",
+                    "city": "New York City",
+                    "state": "NY",
+                    "postal_code": "10010",
+                    "country_code": "US"
+                }
+            }
+        }
+    ],
+    "authors": {
+        "by_name": {
+            "Ernest Hemingway": {
+                "id": 1
+            }
+        }
+    },
+    "publishers": {
+        "by_name": {
+            "Charles Scribner's Sons": {
+                "id": 1
+            }
+        }
+    }
+}
+```
+
+We can register a `gdt.fixtures.JSONFixture` that contains the data in
+`testdata/fixtures.json`:
+
+```go
+	dataFilepath := "testdata/fixtures.json"
+
+	dataFile, _ := os.Open(dataFilepath)
+	dataFixture, err := fixtures.NewJSONFixture(dataFile)
+	if err != nil {
+		panic(err)
+	}
+	gdt.Fixtures.Register("books_data", dataFixture)
+```
+
+To reference any of the data in your `gdt.fixtures.JSONFixture` from your test unit, just make sure the fixture is listed in the test file's `requires` field:
+
+```
+requires:
+ - books_data
+```
+
+Then you can grab any data in the fixture using a JSONPath expression in the `data` contents:
+
+```yaml
+   data:
+     author_id: $.authors.by_name["Ernest Hemingway"].id
+```
 
 ### Specify expected response values (`response.json.paths`)
 
