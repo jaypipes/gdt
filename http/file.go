@@ -87,7 +87,11 @@ func (hf *httpFile) preprocessMapValue(m reflect.Value, k reflect.Value, v refle
 	}
 
 	switch vt.Kind() {
-	case reflect.Array:
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			item := v.Index(i)
+			fmt.Println(item)
+		}
 		fmt.Printf("map element is an array.\n")
 	case reflect.Map:
 		return hf.preprocessMap(v, vt.Key(), vt.Elem())
@@ -165,8 +169,13 @@ func (ht *httpTest) processRequestData() {
 	vt := v.Type()
 
 	switch vt.Kind() {
-	case reflect.Array:
-		fmt.Printf("top-level unmarshaled content is an array.\n")
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			item := v.Index(i).Elem()
+			it := item.Type()
+			ht.f.preprocessMap(item, it.Key(), it.Elem())
+		}
+		//	ht.f.preprocessSliceValue(v, vt.Key(), vt.Elem())
 	case reflect.Map:
 		ht.f.preprocessMap(v, vt.Key(), vt.Elem())
 	}

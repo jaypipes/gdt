@@ -80,6 +80,9 @@ func handleBooks(c *Controller) http.Handler {
 		case "POST":
 			postBooks(c, w, r)
 			return
+		case "PUT":
+			putBooks(c, w, r)
+			return
 		case "GET":
 			listBooks(c, w, r)
 			return
@@ -196,6 +199,51 @@ func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
 		Publisher:   publisher,
 	}
 	return createdID.String(), nil
+}
+
+// putBooks accepts an array of Book entries and creates/replaces the Book
+// entries in the API server. Not a great REST API design, but it allows us to
+// test the PUT method and array pre-processing for the HTTP test hander
+func putBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+	decoder := json.NewDecoder(r.Body)
+	var rbr ReplaceBooksRequest
+	err := decoder.Decode(&rbr)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(422)
+		if err := json.NewEncoder(w).Encode(err); err != nil {
+			panic(err)
+		}
+		return
+	}
+
+	for _, entry := range rbr {
+		// Was ID field set? If so, replace the existing entry, otherwise
+		// create a new book
+		if entry.ID != "" {
+			fmt.Printf("replacing book with ID %s\n", entry.ID)
+		} else {
+			cbr := CreateBookRequest{
+				Title:       entry.Title,
+				AuthorID:    entry.AuthorID,
+				PublisherID: entry.PublisherID,
+				Pages:       entry.Pages,
+			}
+			_, err := c.CreateBook(&cbr)
+			if err != nil {
+				fmt.Printf("XXXXXX: %s", err)
+				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+				w.WriteHeader(400)
+				if err := json.NewEncoder(w).Encode(err); err != nil {
+					panic(err)
+				}
+				return
+			}
+		}
+	}
+
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 }
 
 func (c *Controller) ListBooks() []*Book {
