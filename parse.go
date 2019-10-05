@@ -48,28 +48,39 @@ func Parse(ctx *Context, path string) (Runnable, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	tf := file{
+		ctx:  ctx,
+		path: filepath.Base(path),
+	}
+	if err := parseContents(&tf, contents, &parsers); err != nil {
+		return nil, err
+	}
+	return &tf, nil
+}
+
+func parseContents(
+	tf *file,
+	contents []byte,
+	typeParsers *map[string]Parser,
+) error {
 	tfs := fileSchema{}
-	if err = yaml.Unmarshal(contents, &tfs); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(contents, &tfs); err != nil {
+		return ErrInvalidYAML
 	}
-	parser, found := parsers[strings.ToLower(tfs.Type)]
+	parser, found := (*typeParsers)[strings.ToLower(tfs.Type)]
 	if !found {
-		return nil, ErrUnknownParser
+		return ErrUnknownParser
 	}
 
-	tf := &file{
-		ctx:         ctx,
-		typ:         strings.ToLower(tfs.Type),
-		path:        filepath.Base(path),
-		name:        tfs.Name,
-		description: tfs.Description,
-		require:     tfs.Require,
+	tf.typ = strings.ToLower(tfs.Type)
+	tf.name = tfs.Name
+	tf.description = tfs.Description
+	tf.require = tfs.Require
+
+	if err := parser.Parse(tf, contents); err != nil {
+		return err
 	}
 
-	err = parser.Parse(tf, contents)
-	if err != nil {
-		return nil, err
-	}
-
-	return tf, nil
+	return nil
 }
