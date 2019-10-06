@@ -14,7 +14,7 @@ func From(path string) (Runnable, error) {
 	f, err := os.Open(path)
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	defer f.Close()
 
@@ -25,46 +25,50 @@ func From(path string) (Runnable, error) {
 	fi, err := f.Stat()
 	switch {
 	case err != nil:
-		panic(err)
+		return nil, err
 	case fi.IsDir():
-		{
-			// List YAML files in the directory and parse each into a testable unit
-			var files []string
-			s := &suite{
-				path: path,
-				// TODO(jaypipes): Allows name/description of suite
-				name:        path,
-				description: path,
-			}
-
-			err := filepath.Walk(path, func(subpath string, info os.FileInfo, err error) error {
-				if info.IsDir() {
-					return nil
-				}
-				suffix := filepath.Ext(subpath)
-				if suffix != ".yaml" {
-					return nil
-				}
-				files = append(files, subpath)
-				return nil
-			})
-			if err != nil {
-				panic(err)
-			}
-			for _, fp := range files {
-				tf, err := Parse(ctx, fp)
-				if err != nil {
-					panic(err)
-				}
-				s.Append(tf)
-			}
-			return s, nil
-		}
+		return fromDir(ctx, path)
 	default:
 		tf, err := Parse(ctx, path)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 		return tf, nil
 	}
+}
+
+func fromDir(ctx *Context, dirPath string) (Runnable, error) {
+	// List YAML files in the directory and parse each into a testable unit
+	var files []string
+	s := &suite{
+		path: dirPath,
+		// TODO(jaypipes): Allows name/description of suite
+		name:        dirPath,
+		description: dirPath,
+	}
+
+	if err := filepath.Walk(
+		dirPath,
+		func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+			suffix := filepath.Ext(path)
+			if suffix != ".yaml" {
+				return nil
+			}
+			files = append(files, path)
+			return nil
+		},
+	); err != nil {
+		return nil, err
+	}
+	for _, fp := range files {
+		tf, err := Parse(ctx, fp)
+		if err != nil {
+			return nil, err
+		}
+		s.Append(tf)
+	}
+	return s, nil
 }
