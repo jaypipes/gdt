@@ -42,7 +42,7 @@ from the Golang code that actually performs the test assertions leads to tests
 that are easier to read and understand. This allows developers to spend *more
 time writing code* and less time copy/pasting boilerplate test code. Due to the
 easier test comprehension, `gdt` also encourages writing greater quality and
-coverage of functional tests due to easier test comprehension.
+coverage of functional tests.
 
 Instead of developers writing code that looks like this:
 
@@ -142,7 +142,7 @@ var _ = Describe("Books API Types", func() {
 ```
 
 
-This is perfectly great for simple unit tests of Golang code. However, once the
+This is perfectly fine for simple unit tests of Golang code. However, once the
 tests begin to call multiple APIs or packages, the Ginkgo Golang tests start to
 get cumbersome. Consider the following example of *functionally* testing the
 failure modes for a simple HTTP REST API endpoint
@@ -435,3 +435,12 @@ Depending on the `type` of the test, a parser is invoked to interpret the test
 file according to that particular type of test. See the documentation for the
 [`gdt.http`](http/README.md) test type for an example of how different types of
 tests are handled by an extensible parsing system in `gdt`.
+
+## Contributing and acknowledgements
+
+`gdt` was inspired by [Gabbi](https://github.com/cdent/gabbi), the excellent
+Python declarative testing framework. `gdt` tries to bring the same clear,
+concise test definitions to the world of Golang functional testing.
+
+Contributions to `gdt` are welcomed! Feel free to open a Github issue or submit
+a pull request.
