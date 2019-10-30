@@ -1,4 +1,4 @@
-# `gdt` - The Golang Declarative Testing framework
+# `gdt` - The Golang Declarative Testing framework [![CircleCI](https://circleci.com/gh/jaypipes/gdt.svg?style=svg)](https://circleci.com/gh/jaypipes/gdt)
 
 `gdt` is a testing library that allows test authors to cleanly describe tests
 in a YAML file. `gdt` reads YAML files that describe a test's assertions and
