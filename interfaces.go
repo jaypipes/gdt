@@ -7,7 +7,7 @@ type Fixture interface {
 	Start()
 	Stop()
 	HasState(string) bool
-	State(string) string
+	State(string) interface{}
 }
 
 // FixtureRegistry describes something that can register and return fixtures

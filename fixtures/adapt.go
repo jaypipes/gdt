@@ -35,7 +35,7 @@ func (f *simpleFixture) HasState(key string) bool {
 
 // GetState returns a string attribute from the fixture's state map if the
 // supplied key exists, otherwise returns empty string
-func (f *simpleFixture) State(key string) string {
+func (f *simpleFixture) State(key string) interface{} {
 	if f.state != nil {
 		return f.state[key]
 	}

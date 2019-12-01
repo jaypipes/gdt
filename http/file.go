@@ -33,8 +33,8 @@ type httpFile struct {
 	PrevResponse *nethttp.Response
 }
 
-// BaseURL returns the base URL to use when constructing HTTP requests
-func (hf *httpFile) BaseURL() string {
+// baseURL returns the base URL to use when constructing HTTP requests
+func (hf *httpFile) baseURL() string {
 	// If the httpFile has been manually configured and the configuration
 	// contains a base URL, use that. Otherwise, check to see if there is a
 	// fixture in the registry that has an "http.base_url" state key and use
@@ -46,10 +46,24 @@ func (hf *httpFile) BaseURL() string {
 	// http.base_url state attribute.
 	for _, f := range hf.ctx.Fixtures.List() {
 		if f.HasState(FIXTURE_STATE_KEY_BASE_URL) {
-			return f.State(FIXTURE_STATE_KEY_BASE_URL)
+			return f.State(FIXTURE_STATE_KEY_BASE_URL).(string)
 		}
 	}
 	return ""
+}
+
+// client returns the HTTP client to use when executing HTTP requests. If any
+// fixture provides a state with key "http.client", the fixture is asked for
+// the HTTP client. Otherwise, we use the net/http.DefaultClient
+func (hf *httpFile) client() *nethttp.Client {
+	// query the fixture registry to determine if any of them contain an
+	// http.client state attribute.
+	for _, f := range hf.ctx.Fixtures.List() {
+		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
+			return f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+		}
+	}
+	return nethttp.DefaultClient
 }
 
 // processRequestDataMap processes a map pointed to by v, transforming any
@@ -67,7 +81,7 @@ func (hf *httpFile) preprocessMap(
 					continue
 				}
 				trKeyStr := f.State(keyStr)
-				keyStr = trKeyStr
+				keyStr = trKeyStr.(string)
 			}
 
 			val := it.Value()
@@ -145,8 +159,8 @@ func (ht *httpTest) getURL() (string, error) {
 		}
 		return url.String(), nil
 	}
-	baseURL := ht.f.BaseURL()
-	return baseURL + ht.url, nil
+	base := ht.f.baseURL()
+	return base + ht.url, nil
 }
 
 // processRequestData looks through the raw data interface{} that was
@@ -198,7 +212,7 @@ func (ht *httpTest) Run(t *testing.T) {
 		require.Nil(t, err)
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
-		c := nethttp.DefaultClient
+		c := ht.f.client()
 		resp, err := c.Do(req)
 		require.Nil(t, err)
 		if ht.responseAssertion != nil {

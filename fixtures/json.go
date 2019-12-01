@@ -35,7 +35,7 @@ func (f *jsonFixture) HasState(path string) bool {
 }
 
 // GetState returns the value at supplied JSONPath expression
-func (f *jsonFixture) State(path string) string {
+func (f *jsonFixture) State(path string) interface{} {
 	if f.data == nil {
 		return ""
 	}
