@@ -10,6 +10,7 @@ import (
 
 const (
 	FIXTURE_STATE_KEY_BASE_URL = "http.base_url"
+	FIXTURE_STATE_KEY_CLIENT   = "http.client"
 )
 
 type httpServerFixture struct {
@@ -32,9 +33,13 @@ func (f *httpServerFixture) HasState(key string) bool {
 	return false
 }
 
-func (f *httpServerFixture) State(key string) string {
-	if strings.ToLower(key) == FIXTURE_STATE_KEY_BASE_URL {
+func (f *httpServerFixture) State(key string) interface{} {
+	key = strings.ToLower(key)
+	switch key {
+	case FIXTURE_STATE_KEY_BASE_URL:
 		return f.server.URL
+	case FIXTURE_STATE_KEY_CLIENT:
+		return f.server.Client()
 	}
 	return ""
 }
