@@ -19,7 +19,7 @@ func errPublisherNotFound(publisherID string) error {
 	return fmt.Errorf("No such publisher: %s", publisherID)
 }
 
-type Controller struct {
+type controller struct {
 	lock       *sync.Mutex
 	logger     *log.Logger
 	authors    map[string]*Author
@@ -27,8 +27,8 @@ type Controller struct {
 	books      map[string]*Book
 }
 
-func NewController(logger *log.Logger) *Controller {
-	return &Controller{
+func NewController(logger *log.Logger) *controller {
+	return &controller{
 		lock:       &sync.Mutex{},
 		logger:     logger,
 		authors:    map[string]*Author{},
@@ -37,7 +37,7 @@ func NewController(logger *log.Logger) *Controller {
 	}
 }
 
-func NewControllerWithBooks(logger *log.Logger, data []*Book) *Controller {
+func NewControllerWithBooks(logger *log.Logger, data []*Book) *controller {
 	authors := make(map[string]*Author, 0)
 	publishers := make(map[string]*Publisher, 0)
 	books := make(map[string]*Book, len(data))
@@ -58,7 +58,7 @@ func NewControllerWithBooks(logger *log.Logger, data []*Book) *Controller {
 		}
 		books[book.ID] = book
 	}
-	return &Controller{
+	return &controller{
 		lock:       &sync.Mutex{},
 		logger:     logger,
 		authors:    authors,
@@ -67,14 +67,14 @@ func NewControllerWithBooks(logger *log.Logger, data []*Book) *Controller {
 	}
 }
 
-func (c *Controller) Router() http.Handler {
+func (c *controller) Router() http.Handler {
 	router := http.NewServeMux()
 	router.Handle("/books/", handleBook(c))
 	router.Handle("/books", handleBooks(c))
 	return router
 }
 
-func handleBooks(c *Controller) http.Handler {
+func handleBooks(c *controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "POST":
@@ -92,7 +92,7 @@ func handleBooks(c *Controller) http.Handler {
 	})
 }
 
-func handleBook(c *Controller) http.Handler {
+func handleBook(c *controller) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case "GET":
@@ -106,12 +106,12 @@ func handleBook(c *Controller) http.Handler {
 }
 
 func getBook(
-	c *Controller,
+	c *controller,
 	w http.ResponseWriter,
 	r *http.Request,
 	bookID string,
 ) {
-	book := c.GetBook(bookID)
+	book := c.getBook(bookID)
 	if book == nil {
 		http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		return
@@ -122,7 +122,7 @@ func getBook(
 	json.NewEncoder(w).Encode(book)
 }
 
-func listBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+func listBooks(c *controller, w http.ResponseWriter, r *http.Request) {
 	// Our GET /books endpoint only supports a "sort" parameter
 	params := r.URL.Query()
 	if len(params) > 0 {
@@ -137,13 +137,13 @@ func listBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var lbr ListBooksResponse
-	lbr.Books = c.ListBooks()
+	lbr.Books = c.listBooks()
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&lbr)
 }
 
-func postBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+func postBooks(c *controller, w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var cbr CreateBookRequest
 	err := decoder.Decode(&cbr)
@@ -156,7 +156,7 @@ func postBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdID, err := c.CreateBook(&cbr)
+	createdID, err := c.createBook(&cbr)
 	if err != nil {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(400)
@@ -172,7 +172,7 @@ func postBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
-func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
+func (c *controller) createBook(cbr *CreateBookRequest) (string, error) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 
@@ -204,7 +204,7 @@ func (c *Controller) CreateBook(cbr *CreateBookRequest) (string, error) {
 // putBooks accepts an array of Book entries and creates/replaces the Book
 // entries in the API server. Not a great REST API design, but it allows us to
 // test the PUT method and array pre-processing for the HTTP test hander
-func putBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
+func putBooks(c *controller, w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var rbr ReplaceBooksRequest
 	err := decoder.Decode(&rbr)
@@ -229,7 +229,7 @@ func putBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 				PublisherID: entry.PublisherID,
 				Pages:       entry.Pages,
 			}
-			_, err := c.CreateBook(&cbr)
+			_, err := c.createBook(&cbr)
 			if err != nil {
 				fmt.Printf("XXXXXX: %s", err)
 				w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -246,7 +246,7 @@ func putBooks(c *Controller, w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (c *Controller) ListBooks() []*Book {
+func (c *controller) listBooks() []*Book {
 	res := make([]*Book, 0, len(c.books))
 	for _, book := range c.books {
 		res = append(res, book)
@@ -254,7 +254,7 @@ func (c *Controller) ListBooks() []*Book {
 	return res
 }
 
-func (c *Controller) GetBook(bookID string) *Book {
+func (c *controller) getBook(bookID string) *Book {
 	for _, book := range c.books {
 		if book.ID == bookID {
 			return book
@@ -263,10 +263,10 @@ func (c *Controller) GetBook(bookID string) *Book {
 	return nil
 }
 
-func (c *Controller) Log(args ...interface{}) {
+func (c *controller) Log(args ...interface{}) {
 	c.logger.Println(args...)
 }
 
-func (c *Controller) Panic(fs string, args ...interface{}) {
+func (c *controller) Panic(fs string, args ...interface{}) {
 	c.logger.Fatalf(fs, args...)
 }
