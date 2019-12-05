@@ -24,7 +24,7 @@ var (
 	}
 )
 
-func TestBooksAPI(t *testing.T) {
+func TestBooksAPI_HTTP(t *testing.T) {
 	// Register an HTTP server fixture that spins up the API service on a
 	// random port on localhost
 	dataFilepath := "testdata/fixtures.json"
@@ -36,7 +36,7 @@ func TestBooksAPI(t *testing.T) {
 	if err = json.NewDecoder(dataFile).Decode(&data); err != nil {
 		panic(err)
 	}
-	logger := log.New(os.Stdout, "http: ", log.LstdFlags)
+	logger := log.New(os.Stdout, "books_api_http: ", log.LstdFlags)
 	c := api.NewControllerWithBooks(logger, data.Books)
 	apiFixture := http.NewHTTPServerFixture(c.Router())
 	gdt.Fixtures.Register("books_api", apiFixture)

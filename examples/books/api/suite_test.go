@@ -39,7 +39,7 @@ var _ = AfterSuite(func() {
 	server.Close()
 })
 
-func TestBooksAPI(t *testing.T) {
+func TestBooksAPI_Ginkgo(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Books API Suite")
 }

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	nethttp "net/http"
 	"reflect"
 	"strings"
@@ -172,7 +171,9 @@ func (ht *httpTest) processRequestData() {
 	if ht.data == nil {
 		return
 	}
-
+	gdt.Debugf("[gdt.http.file.httpTest:processRequestData]\n")
+	gdt.Debugf("  %+v\n", ht.data)
+	gdt.Debugf("[/gdt.http.file.httpTest:processRequestData]\n")
 	// Get a pointer to the unmarshaled interface{} so we can mutate the
 	// contents pointed to
 	p := reflect.ValueOf(&ht.data)
@@ -205,10 +206,11 @@ func (ht *httpTest) Run(t *testing.T) {
 		require.Nil(t, err)
 		body = bytes.NewReader(jsonBody)
 	}
+	gdt.Debugf("[gdt.http.file.httpTest:Run] running test %s\n", ht.name)
 	t.Run(ht.name, func(t *testing.T) {
 		url, err := ht.getURL()
 		require.Nil(t, err)
-		req, err := http.NewRequest(ht.method, url, body)
+		req, err := nethttp.NewRequest(ht.method, url, body)
 		require.Nil(t, err)
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
