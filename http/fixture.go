@@ -16,10 +16,15 @@ const (
 type httpServerFixture struct {
 	handler nethttp.Handler
 	server  *httptest.Server
+	useTLS  bool
 }
 
 func (f *httpServerFixture) Start() {
-	f.server = httptest.NewServer(f.handler)
+	if !f.useTLS {
+		f.server = httptest.NewServer(f.handler)
+	} else {
+		f.server = httptest.NewTLSServer(f.handler)
+	}
 }
 
 func (f *httpServerFixture) Stop() {
@@ -46,10 +51,10 @@ func (f *httpServerFixture) State(key string) interface{} {
 	return ""
 }
 
-// NewHTTPServerFixture returns a fixture that will start and stop a supplied
+// NewServerFixture returns a fixture that will start and stop a supplied
 // http.Handler. The returned fixture exposes an "http.base_url" state key that
 // test cases of type "http" examine to determine the base URL the tests should
 // hit
-func NewHTTPServerFixture(h nethttp.Handler) gdt.Fixture {
-	return &httpServerFixture{handler: h}
+func NewServerFixture(h nethttp.Handler, useTLS bool) gdt.Fixture {
+	return &httpServerFixture{handler: h, useTLS: useTLS}
 }
