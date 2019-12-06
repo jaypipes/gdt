@@ -59,7 +59,11 @@ func (hf *httpFile) client() *nethttp.Client {
 	// http.client state attribute.
 	for _, f := range hf.ctx.Fixtures.List() {
 		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
-			return f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+			c, ok := f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+			if !ok {
+				panic("fixture failed to return a *net/http.Client")
+			}
+			return c
 		}
 	}
 	return nethttp.DefaultClient
@@ -171,9 +175,7 @@ func (ht *httpTest) processRequestData() {
 	if ht.data == nil {
 		return
 	}
-	gdt.Debugf("[gdt.http.file.httpTest:processRequestData]\n")
-	gdt.Debugf("  %+v\n", ht.data)
-	gdt.Debugf("[/gdt.http.file.httpTest:processRequestData]\n")
+	gdt.V3("http.file.httpTest:processRequestData", "ht.data: %+v\n", ht.data)
 	// Get a pointer to the unmarshaled interface{} so we can mutate the
 	// contents pointed to
 	p := reflect.ValueOf(&ht.data)
@@ -206,17 +208,36 @@ func (ht *httpTest) Run(t *testing.T) {
 		require.Nil(t, err)
 		body = bytes.NewReader(jsonBody)
 	}
-	gdt.Debugf("[gdt.http.file.httpTest:Run] running test %s\n", ht.name)
 	t.Run(ht.name, func(t *testing.T) {
 		url, err := ht.getURL()
-		require.Nil(t, err)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V2("http.file.httpTest:Run", "using URL: %s\n", url)
+
 		req, err := nethttp.NewRequest(ht.method, url, body)
-		require.Nil(t, err)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V3("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
+
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
 		c := ht.f.client()
+		gdt.V3("http.file.httpFile:client", "using http.Client: %+v\n", c)
+
 		resp, err := c.Do(req)
-		require.Nil(t, err)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V3("http.file.httpTest:Run", "got http.Response: %+v\n", resp)
+
+		// Make sure we drain and close our response body...
+		defer func() {
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}()
+
 		if ht.responseAssertion != nil {
 			// Only read the response body contents once and pass the byte
 			// buffer to the assertion functions
