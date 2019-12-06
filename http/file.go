@@ -216,13 +216,23 @@ func (ht *httpTest) Run(t *testing.T) {
 		url, err := ht.getURL()
 		require.Nil(t, err)
 		req, err := nethttp.NewRequest(ht.method, url, body)
-		gdt.V2("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
 		require.Nil(t, err)
+		gdt.V2("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
+
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
 		c := ht.f.client()
+
 		resp, err := c.Do(req)
+		gdt.V2("http.file.httpTest:Run", "got http.Response: %+v\n", resp)
 		require.Nil(t, err)
+
+		// Make sure we drain and close our response body...
+		defer func() {
+			io.Copy(ioutil.Discard, resp.Body)
+			resp.Body.Close()
+		}()
+
 		if ht.responseAssertion != nil {
 			// Only read the response body contents once and pass the byte
 			// buffer to the assertion functions
