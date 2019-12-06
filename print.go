@@ -5,17 +5,28 @@ import (
 	"fmt"
 )
 
-var optDebug bool
+var optVerbosity int
 
 func init() {
-	flag.BoolVar(&optDebug, "gdt.debug", false, "Turn on the gdt library's debug output.")
+	flag.IntVar(&optVerbosity, "gdt.v", 0, "Increase verbosity of gdt library's debugging output.")
 }
 
-// Debugf prints the supplied message with args if the gdt.debug flag has been
-// set to a truthy value
-func Debugf(msg string, args ...interface{}) {
-	if !optDebug {
+// V1 prints the supplied message with args if the gdt.verbosity flag has been
+// set to 1 or more.
+func V1(callID string, msg string, args ...interface{}) {
+	debugf(1, callID, msg, args...)
+}
+
+// V2 prints the supplied message with args if the gdt.verbosity flag has been
+// set to 2 or more.
+func V2(callID string, msg string, args ...interface{}) {
+	debugf(2, callID, msg, args...)
+}
+
+func debugf(v int, callID string, msg string, args ...interface{}) {
+	if optVerbosity < v {
 		return
 	}
-	fmt.Printf(msg, args...)
+	line := fmt.Sprintf("[gdt.%s] %s", callID, msg)
+	fmt.Printf(line, args...)
 }

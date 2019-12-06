@@ -57,12 +57,20 @@ func (hf *httpFile) baseURL() string {
 func (hf *httpFile) client() *nethttp.Client {
 	// query the fixture registry to determine if any of them contain an
 	// http.client state attribute.
+	var c *nethttp.Client
 	for _, f := range hf.ctx.Fixtures.List() {
 		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
-			return f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+			var ok bool
+			if c, ok = f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client); !ok {
+				panic("fixture failed to return a *net/http.Client")
+			}
 		}
 	}
-	return nethttp.DefaultClient
+	if c == nil {
+		c = nethttp.DefaultClient
+	}
+	gdt.V2("http.file.httpFile:client", "using http.Client: %+v\n", c)
+	return c
 }
 
 // processRequestDataMap processes a map pointed to by v, transforming any
@@ -171,9 +179,7 @@ func (ht *httpTest) processRequestData() {
 	if ht.data == nil {
 		return
 	}
-	gdt.Debugf("[gdt.http.file.httpTest:processRequestData]\n")
-	gdt.Debugf("  %+v\n", ht.data)
-	gdt.Debugf("[/gdt.http.file.httpTest:processRequestData]\n")
+	gdt.V2("http.file.httpTest:processRequestData", "ht.data: %+v\n", ht.data)
 	// Get a pointer to the unmarshaled interface{} so we can mutate the
 	// contents pointed to
 	p := reflect.ValueOf(&ht.data)
@@ -206,11 +212,11 @@ func (ht *httpTest) Run(t *testing.T) {
 		require.Nil(t, err)
 		body = bytes.NewReader(jsonBody)
 	}
-	gdt.Debugf("[gdt.http.file.httpTest:Run] running test %s\n", ht.name)
 	t.Run(ht.name, func(t *testing.T) {
 		url, err := ht.getURL()
 		require.Nil(t, err)
 		req, err := nethttp.NewRequest(ht.method, url, body)
+		gdt.V2("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
 		require.Nil(t, err)
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc

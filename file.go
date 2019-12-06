@@ -41,7 +41,7 @@ func (f *file) Run(t *testing.T) {
 			if fix == nil {
 				t.Fatalf("failed to find required fixture '%s'", fname)
 			}
-			Debugf("[gdt.file.file:Run] starting fixture %s\n", fname)
+			V2("file.file:Run", "starting fixture %s\n", fname)
 			fix.Start()
 			defer fix.Stop()
 		}
