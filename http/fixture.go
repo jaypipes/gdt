@@ -27,7 +27,9 @@ func (f *httpServerFixture) Stop() {
 }
 
 func (f *httpServerFixture) HasState(key string) bool {
-	if strings.ToLower(key) == FIXTURE_STATE_KEY_BASE_URL {
+	lkey := strings.ToLower(key)
+	switch lkey {
+	case FIXTURE_STATE_KEY_BASE_URL, FIXTURE_STATE_KEY_CLIENT:
 		return true
 	}
 	return false

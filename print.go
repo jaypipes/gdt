@@ -23,6 +23,12 @@ func V2(callID string, msg string, args ...interface{}) {
 	debugf(2, callID, msg, args...)
 }
 
+// V3 prints the supplied message with args if the gdt.verbosity flag has been
+// set to 3 or more.
+func V3(callID string, msg string, args ...interface{}) {
+	debugf(3, callID, msg, args...)
+}
+
 func debugf(v int, callID string, msg string, args ...interface{}) {
 	if optVerbosity < v {
 		return

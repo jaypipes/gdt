@@ -57,20 +57,16 @@ func (hf *httpFile) baseURL() string {
 func (hf *httpFile) client() *nethttp.Client {
 	// query the fixture registry to determine if any of them contain an
 	// http.client state attribute.
-	var c *nethttp.Client
 	for _, f := range hf.ctx.Fixtures.List() {
 		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
-			var ok bool
-			if c, ok = f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client); !ok {
+			c, ok := f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+			if !ok {
 				panic("fixture failed to return a *net/http.Client")
 			}
+			return c
 		}
 	}
-	if c == nil {
-		c = nethttp.DefaultClient
-	}
-	gdt.V2("http.file.httpFile:client", "using http.Client: %+v\n", c)
-	return c
+	return nethttp.DefaultClient
 }
 
 // processRequestDataMap processes a map pointed to by v, transforming any
@@ -179,7 +175,7 @@ func (ht *httpTest) processRequestData() {
 	if ht.data == nil {
 		return
 	}
-	gdt.V2("http.file.httpTest:processRequestData", "ht.data: %+v\n", ht.data)
+	gdt.V3("http.file.httpTest:processRequestData", "ht.data: %+v\n", ht.data)
 	// Get a pointer to the unmarshaled interface{} so we can mutate the
 	// contents pointed to
 	p := reflect.ValueOf(&ht.data)
@@ -214,18 +210,27 @@ func (ht *httpTest) Run(t *testing.T) {
 	}
 	t.Run(ht.name, func(t *testing.T) {
 		url, err := ht.getURL()
-		require.Nil(t, err)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V2("http.file.httpTest:Run", "using URL: %s\n", url)
+
 		req, err := nethttp.NewRequest(ht.method, url, body)
-		require.Nil(t, err)
-		gdt.V2("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V3("http.file.httpTest:Run", "constructed http.Request: %+v\n", req)
 
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
 		c := ht.f.client()
+		gdt.V3("http.file.httpFile:client", "using http.Client: %+v\n", c)
 
 		resp, err := c.Do(req)
-		gdt.V2("http.file.httpTest:Run", "got http.Response: %+v\n", resp)
-		require.Nil(t, err)
+		if err != nil {
+			panic(err)
+		}
+		gdt.V3("http.file.httpTest:Run", "got http.Response: %+v\n", resp)
 
 		// Make sure we drain and close our response body...
 		defer func() {
