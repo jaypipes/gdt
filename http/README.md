@@ -65,6 +65,9 @@ The `json` object has the following attributes:
   JSONPath expressions and the values of the map are the expected format of the
   value to be found when evaluating the JSONPath expression. See the
   [list of valid format strings](#valid-format-strings)
+* `schema`: (optional) string containing a filepath to a JSONSchema document.
+  If present, the JSON included in the HTTP response will be validated against
+  this JSONSChema document.
 
 ### Specify HTTP request payload
 
@@ -368,4 +371,74 @@ tests:
          $.publisher.address.state: NY
        path_formats:
          $.id: uuid4
+```
+
+[`examples/books/tests/api/get_books.yaml`](../examples/books/tests/api/get_books.yaml):
+
+```yaml
+require:
+ - books_api
+ - books_data
+tests:
+ - name: list all books
+   GET: /books
+   response:
+     status: 200
+     json:
+       schema: schemas/get_books.json
+```
+
+with the contents of [`examples/books/tests/api/schemas/get_books.json`](../examples/books/tests/api/schemas/get_books.json):
+
+```json
+{
+  "$id": "/schemas/get_books.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "books": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "number"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "require": [ "id", "name" ]
+          },
+          "publisher": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "require": [ "id", "name" ]
+          }
+        },
+        "required": [ "id", "title", "author" ]
+      }
+    }
+  },
+  "required": [ "books" ]
+}
 ```

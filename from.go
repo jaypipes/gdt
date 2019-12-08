@@ -11,6 +11,7 @@ func From(path string) (Runnable, error) {
 	// Determine if the path is a directory or a regular file. If it's a
 	// directory, construct a suite. If it's a regular file, construct a test
 	// file by parsing the contents.
+	path, _ = filepath.Abs(path)
 	f, err := os.Open(path)
 
 	if err != nil {
@@ -27,8 +28,10 @@ func From(path string) (Runnable, error) {
 	case err != nil:
 		return nil, err
 	case fi.IsDir():
+		ctx.Basedir = path
 		return fromDir(ctx, path)
 	default:
+		ctx.Basedir = filepath.Dir(path)
 		tf, err := Parse(ctx, path)
 		if err != nil {
 			return nil, err
