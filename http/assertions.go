@@ -9,6 +9,7 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	gjs "github.com/xeipuuv/gojsonschema"
 )
 
 const (
@@ -17,6 +18,7 @@ const (
 	msgJSONUnmarshalError  = "Failed to unmarshal JSON: %s"
 	msgJSONPathError       = "Failed to find JSONPath %s: %s"
 	msgJSONPathStringValue = "Expected string value at JSONPath %s but got JSONPath value %v which is not convertable to string"
+	msgJSONSchemaInvalid   = "Expected JSON to validate against JSONSchema, but found validation errors:\n%s"
 	msgStringInBody        = "Expected HTTP response to contain %s"
 	msgHeaderIn            = "Expected HTTP header %s to be in response"
 	msgHeaderValue         = "Expected HTTP header with value %s to be in response"
@@ -69,6 +71,9 @@ func assertJSON(t *testing.T, r *nethttp.Response, b []byte, jspec *jsonAssertio
 	if len(jspec.PathFormats) > 0 {
 		assertJSONPathFormats(t, r, b, jspec.PathFormats)
 	}
+	if jspec.Schema != "" {
+		assertJSONSchema(t, r, b, jspec.Schema)
+	}
 }
 
 func assertJSONLen(t *testing.T, r *nethttp.Response, b []byte, exp uint) {
@@ -114,4 +119,34 @@ func assertJSONPathFormat(t *testing.T, r *nethttp.Response, path string, format
 	ok, err = isFormatted(format, gotStr)
 	require.Nil(t, err, msgFormatInvalid, format)
 	assert.True(t, ok, msgFormatBad, format, gotStr)
+}
+
+// assertJSONSchema verifies that the HTTP response validates against a
+// supplied JSONSchema document
+//
+// NOTE(jaypipes): schemaPath is an absolute path and should be checked for
+// existence before running this function
+func assertJSONSchema(
+	t *testing.T,
+	r *nethttp.Response,
+	subject []byte,
+	schemaPath string,
+) {
+	t.Helper()
+
+	schemaLoader := gjs.NewReferenceLoader(schemaPath)
+	docLoader := gjs.NewStringLoader(string(subject))
+
+	res, err := gjs.Validate(schemaLoader, docLoader)
+	require.Nil(t, err)
+
+	var errStr string
+	if len(res.Errors()) > 0 {
+		errStrs := make([]string, len(res.Errors()))
+		for x, e := range res.Errors() {
+			errStrs[x] = e.String()
+		}
+		errStr = "- " + strings.Join(errStrs, "\n- ")
+	}
+	assert.True(t, res.Valid(), msgJSONSchemaInvalid, errStr)
 }

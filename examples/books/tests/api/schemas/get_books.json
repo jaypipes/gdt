@@ -1,0 +1,50 @@
+{
+  "$id": "/schemas/get_books.json",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "books": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "pages": {
+            "type": "number"
+          },
+          "author": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "require": [ "id", "name" ]
+          },
+          "publisher": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "require": [ "id", "name" ]
+          }
+        },
+        "required": [ "id", "title", "author" ]
+      }
+    }
+  },
+  "required": [ "books" ]
+}

@@ -1,0 +1,10 @@
+require:
+ - books_api
+ - books_data
+tests:
+ - name: list all books
+   GET: /books
+   response:
+     status: 200
+     json:
+       schema: schemas/get_books.json

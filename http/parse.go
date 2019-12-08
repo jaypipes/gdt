@@ -1,15 +1,34 @@
 package http
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+
 	"github.com/ghodss/yaml"
 
 	"github.com/jaypipes/gdt"
 )
 
+const (
+	msgUnsupportedJSONSchemaReference = "unsupported JSONSchema reference URL: %s"
+	msgJSONSchemaFileNotFound         = "unable to find JSONSchema file: %s"
+)
+
+func errUnsupportedJSONSchemaReference(url string) error {
+	return fmt.Errorf(msgUnsupportedJSONSchemaReference, url)
+}
+
+func errJSONSchemaFileNotFound(path string) error {
+	return fmt.Errorf(msgJSONSchemaFileNotFound, path)
+}
+
 type jsonAssertion struct {
 	Length      *uint             `json:"length"`
 	Paths       map[string]string `json:"paths"`
 	PathFormats map[string]string `json:"path_formats"`
+	Schema      string            `json:"schema"`
 }
 
 type responseAssertion struct {
@@ -68,6 +87,9 @@ func (p *httpParser) Parse(ca gdt.ContextAppendable, contents []byte) error {
 		ca.Context(), nil, nil,
 	}
 	for _, tspec := range tcs.Specs {
+		if err = validateResponseAssertion(ca, tspec.Response); err != nil {
+			return err
+		}
 		ht := httpTest{
 			f:                 hf,
 			name:              tspec.Name,
@@ -101,4 +123,38 @@ func parseMethodAndURL(tspec *testSpec) (string, string, error) {
 		return "", "", ErrInvalidAliasOrURL
 	}
 	return tspec.Method, tspec.URL, nil
+}
+
+func validateResponseAssertion(
+	ca gdt.ContextAppendable,
+	resp *responseAssertion,
+) error {
+	if resp == nil {
+		return nil
+	}
+	if resp.JSON == nil {
+		return nil
+	}
+	if resp.JSON.Schema == "" {
+		return nil
+	}
+	// Ensure any JSONSchema URL specified in response.json.schema exists
+	schemaURL := resp.JSON.Schema
+	if strings.HasPrefix(schemaURL, "http://") || strings.HasPrefix(schemaURL, "https://") {
+		// TODO(jaypipes): Support network lookups?
+		return errUnsupportedJSONSchemaReference(schemaURL)
+	}
+	// Convert relative filepaths to absolute filepaths rooted in the context's
+	// testdir after stripping any "file://" scheme prefix
+	schemaURL = strings.TrimPrefix(schemaURL, "file://")
+	if !filepath.IsAbs(schemaURL) {
+		schemaURL = filepath.Join(ca.Context().Basedir, schemaURL)
+	}
+	f, err := os.Open(schemaURL)
+	if err != nil {
+		return errJSONSchemaFileNotFound(schemaURL)
+	}
+	defer f.Close()
+	resp.JSON.Schema = "file://" + schemaURL
+	return nil
 }
