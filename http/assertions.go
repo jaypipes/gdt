@@ -116,7 +116,7 @@ func assertJSONPathFormat(t *testing.T, r *nethttp.Response, path string, format
 	require.Nil(t, err, msgJSONPathError, path, err)
 	gotStr, ok := got.(string)
 	assert.True(t, ok, msgJSONPathStringValue, path, got)
-	ok, err = isFormatted(format, gotStr)
+	ok, err = isFormatted(format, got)
 	require.Nil(t, err, msgFormatInvalid, format)
 	assert.True(t, ok, msgFormatBad, format, gotStr)
 }
