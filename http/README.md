@@ -291,8 +291,31 @@ the expected format of that value.
 
 #### Valid format strings
 
-The currently supported format strings are:
+The currently supported format strings are all format strings in Draft7 of
+JSONSchema plus the "uuid4" variant:
 
+* "date": must be a date string in the format YYYY-MM-DD
+* "time": must be a time string in format HH:MM:SSZ-07:00 or HH:MM:SS
+* "date-time": must be a date-time string in any of the following formats:
+
+ * YYYY-MM-DDTHH:MM:SSZ-0700
+ * YYYY-MM-DD
+ * HH:MM:SSZ-0700
+ * HH:MM:SS
+
+* "hostname": must be a valid DNS hostname (RFC 952 and RFC 1123)
+* "email": must be a valid email address (RFC 5322)
+* "idn-email": must be a valid email address (RFC 5322)
+* "ipv4": must be a valid IPv4 address (RFC 791)
+* "ipv6": must be a valid IPv6 address (RFC 4291)
+* "uri": must be a valid URI (RFC 3986)
+* "uri-reference": must be a valid URI or relative-reference (RFC 3986)
+* "iri": must be a valid URI (RFC 3986)
+* "iri-reference": must be a valid URI or relative-reference (RFC 3986)
+* "uri-template": must be a valid URI template (RFC 6570)
+* "regex": must be a valid POSIX regular expression
+* "json-pointer": must be a valid JSON pointer value
+* "relative-json-pointer": must be a valid relative JSON pointer value
 * "uuid": must be any version of UUID
 * "uuid4": must be a UUID version 4
 
