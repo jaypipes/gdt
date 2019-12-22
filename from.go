@@ -32,8 +32,12 @@ func From(path string) (Runnable, error) {
 		return fromDir(ctx, path)
 	default:
 		ctx.Basedir = filepath.Dir(path)
-		tf, err := Parse(ctx, path)
-		if err != nil {
+
+		tf := &file{
+			ctx:  ctx,
+			path: filepath.Base(path),
+		}
+		if err = tf.parse(f); err != nil {
 			return nil, err
 		}
 		return tf, nil
@@ -42,7 +46,6 @@ func From(path string) (Runnable, error) {
 
 func fromDir(ctx *Context, dirPath string) (Runnable, error) {
 	// List YAML files in the directory and parse each into a testable unit
-	var files []string
 	s := &suite{
 		path: dirPath,
 		// TODO(jaypipes): Allows name/description of suite
@@ -60,18 +63,25 @@ func fromDir(ctx *Context, dirPath string) (Runnable, error) {
 			if suffix != ".yaml" {
 				return nil
 			}
-			files = append(files, path)
+			f, err := os.Open(path)
+
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			tf := &file{
+				ctx:  ctx,
+				path: filepath.Base(path),
+			}
+			if err = tf.parse(f); err != nil {
+				return err
+			}
+			s.Append(tf)
 			return nil
 		},
 	); err != nil {
 		return nil, err
-	}
-	for _, fp := range files {
-		tf, err := Parse(ctx, fp)
-		if err != nil {
-			return nil, err
-		}
-		s.Append(tf)
 	}
 	return s, nil
 }
