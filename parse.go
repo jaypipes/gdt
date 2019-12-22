@@ -1,9 +1,8 @@
 package gdt
 
 import (
+	"io"
 	"io/ioutil"
-	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -30,36 +29,26 @@ type fileSchema struct {
 	Require     []string `json:"require"`
 }
 
-// Parse reads a supplied file and parses it into a GDT File
+// parse parses the supplied file and returns an error if any syntax or
+// validation failed
 //
 // We do a double-parse of the test file. The first pass determines the
 // type of test by simply looking for a "type" top-level element in the
 // YAML. If no "type" element was found, the test type defaults to HTTP.
 // Once the type is determined, then the test case module (e.g. gdt/http)
 // is called to parse the file into the case type-specific schema
-func Parse(ctx *Context, path string) (Runnable, error) {
-	f, err := os.Open(path)
-
+func (tf *file) parse(r io.Reader) error {
+	contents, err := ioutil.ReadAll(r)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	defer f.Close()
-	contents, err := ioutil.ReadAll(f)
-	if err != nil {
-		return nil, err
+	if err := parseBytes(tf, contents, &parsers); err != nil {
+		return err
 	}
-
-	tf := file{
-		ctx:  ctx,
-		path: filepath.Base(path),
-	}
-	if err := parseContents(&tf, contents, &parsers); err != nil {
-		return nil, err
-	}
-	return &tf, nil
+	return nil
 }
 
-func parseContents(
+func parseBytes(
 	tf *file,
 	contents []byte,
 	typeParsers *map[string]Parser,

@@ -12,7 +12,7 @@ func (p *fooParser) Parse(ContextAppendable, []byte) error {
 	return nil
 }
 
-func TestParseContents(t *testing.T) {
+func TestParseBytes(t *testing.T) {
 	fakeParsers := map[string]Parser{
 		"foo": &fooParser{},
 	}
@@ -53,7 +53,7 @@ name: foo test
 		tf := file{
 			name: test.name,
 		}
-		got := parseContents(&tf, test.contents, &fakeParsers)
+		got := parseBytes(&tf, test.contents, &fakeParsers)
 		assert.Equal(t, test.exp, got)
 	}
 }
