@@ -42,10 +42,7 @@ func (tf *file) parse(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	if err := parseBytes(tf, contents, &parsers); err != nil {
-		return err
-	}
-	return nil
+	return parseBytes(tf, contents, &parsers)
 }
 
 func parseBytes(
