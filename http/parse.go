@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/ghodss/yaml"
@@ -147,14 +148,20 @@ func validateResponseAssertion(
 	// Convert relative filepaths to absolute filepaths rooted in the context's
 	// testdir after stripping any "file://" scheme prefix
 	schemaURL = strings.TrimPrefix(schemaURL, "file://")
-	if !filepath.IsAbs(schemaURL) {
-		schemaURL = filepath.Join(ca.Context().Basedir, schemaURL)
-	}
+	schemaURL, _ = filepath.Abs(schemaURL)
+
 	f, err := os.Open(schemaURL)
 	if err != nil {
 		return errJSONSchemaFileNotFound(schemaURL)
 	}
 	defer f.Close()
-	resp.JSON.Schema = "file://" + schemaURL
+	if runtime.GOOS == "windows" {
+		// Need to do this because of an "optimization" done in the
+		// gojsonreference library:
+		// https://github.com/xeipuuv/gojsonreference/blob/bd5ef7bd5415a7ac448318e64f11a24cd21e594b/reference.go#L107-L114
+		resp.JSON.Schema = "file:///" + schemaURL
+	} else {
+		resp.JSON.Schema = "file://" + schemaURL
+	}
 	return nil
 }
