@@ -71,7 +71,7 @@ func TestBooksAPI_HTTPS(t *testing.T) {
 	if err = json.NewDecoder(dataFile).Decode(&data); err != nil {
 		panic(err)
 	}
-	logger := log.New(os.Stdout, "books_api_http: ", log.LstdFlags)
+	logger := log.New(os.Stdout, "books_api_https: ", log.LstdFlags)
 	c := api.NewControllerWithBooks(logger, data.Books)
 	apiFixture := http.NewServerFixture(c.Router(), true /* useTLS */)
 	gdt.Fixtures.Register("books_api", apiFixture)

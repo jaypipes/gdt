@@ -1,4 +1,4 @@
-# `gdt` - The Golang Declarative Testing framework ![go test workflow](https://github.com/jaypipes/gdt/actions/workflows/test.yml/badge.svg)
+# `gdt` - The Golang Declarative Testing framework ![go test workflow](https://github.com/jaypipes/gdt/actions/workflows/gate-tests.yml/badge.svg)
 
 `gdt` is a testing library that allows test authors to cleanly describe tests
 in a YAML file. `gdt` reads YAML files that describe a test's assertions and
@@ -90,7 +90,7 @@ tests:
 When using Ginkgo, developers create tests for a particular module (say, the
 `books` module) by creating a `books_test.go` file and calling some Ginkgo
 functions in a BDD test style. A sample Ginkgo test might look something like
-this ([`types_test.go`](examples/books/api/types_test.go)):
+this ([`types_test.go`](examples/books/api/types_test.go.txt)):
 
 ```go
 package api_test
@@ -146,7 +146,7 @@ This is perfectly fine for simple unit tests of Golang code. However, once the
 tests begin to call multiple APIs or packages, the Ginkgo Golang tests start to
 get cumbersome. Consider the following example of *functionally* testing the
 failure modes for a simple HTTP REST API endpoint
-([`failure_test.go`](examples/books/api/failure_test.go)):
+([`failure_test.go`](examples/books/api/failure_test.go.txt)):
 
 
 ```go
@@ -304,7 +304,7 @@ Consider a Ginkgo test case that checks the following behaviour:
 * The newly-created book's ID field is a valid UUID
 * The newly-created book's publisher has an address containing a known state code
 
-A typical implementation of a Ginkgo Golang test might look like this ([`create_then_get_test.go`](examples/books/api/create_then_get_test.go)):
+A typical implementation of a Ginkgo Golang test might look like this ([`create_then_get_test.go`](examples/books/api/create_then_get_test.go.txt)):
 
 ```go
 package api_test
@@ -353,7 +353,7 @@ var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
                 // See https://github.com/onsi/ginkgo/issues/70 for why this
                 // has to be one giant It() block. The GET tests rely on the
                 // result of an earlier POST response (for the Location header)
-                // and therefore all of the assertions below much be in a
+                // and therefore all of the assertions below must be in a
                 // single It() block. :(
 
                 Ω(resp.StatusCode).Should(Equal(201))
@@ -428,7 +428,7 @@ All gdt test files contain YAML. All `gdt` test files, regardless of their type
 * `type`: (optional) string indicating the type of tests contained in the file.
   `gdt` looks up a test file parser that understands this type of test.
   Defaults to "http"
-* `requires`: (optional) list of strings indicating fixtures that will be
+* `require`: (optional) list of strings indicating fixtures that will be
   started before any of the tests in the file are run
 
 Depending on the `type` of the test, a parser is invoked to interpret the test
