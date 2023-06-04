@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	errExpectedLocationHeader = errors.New("Expected Location HTTP Header in previous response")
+	ErrExpectedLocationHeader = errors.New("Expected Location HTTP Header in previous response")
 )
 
 type httpFileConfig struct {
@@ -48,8 +48,8 @@ func (hf *httpFile) baseURL() string {
 	// query the fixture registry to determine if any of them contain an
 	// http.base_url state attribute.
 	for _, f := range hf.ctx.Fixtures.List() {
-		if f.HasState(FIXTURE_STATE_KEY_BASE_URL) {
-			return f.State(FIXTURE_STATE_KEY_BASE_URL).(string)
+		if f.HasState(StateKeyBaseURL) {
+			return f.State(StateKeyBaseURL).(string)
 		}
 	}
 	return ""
@@ -62,8 +62,8 @@ func (hf *httpFile) client() *nethttp.Client {
 	// query the fixture registry to determine if any of them contain an
 	// http.client state attribute.
 	for _, f := range hf.ctx.Fixtures.List() {
-		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
-			c, ok := f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+		if f.HasState(StateKeyClient) {
+			c, ok := f.State(StateKeyClient).(*nethttp.Client)
 			if !ok {
 				panic("fixture failed to return a *net/http.Client")
 			}
@@ -162,7 +162,7 @@ func (ht *httpTest) getURL() (string, error) {
 		}
 		url, err := ht.f.PrevResponse.Location()
 		if err != nil {
-			return "", errExpectedLocationHeader
+			return "", ErrExpectedLocationHeader
 		}
 		return url.String(), nil
 	}
