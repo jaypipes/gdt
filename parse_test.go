@@ -1,3 +1,7 @@
+// Use and distribution licensed under the Apache license version 2.
+//
+// See the COPYING file in the root project directory for full text.
+
 package gdt
 
 import (
@@ -13,9 +17,7 @@ func (p *fooParser) Parse(ContextAppendable, []byte) error {
 }
 
 func TestParseBytes(t *testing.T) {
-	fakeParsers := map[string]Parser{
-		"foo": &fooParser{},
-	}
+	Parsers.Register(&fooParser{}, "foo")
 	tests := []struct {
 		name     string
 		contents []byte
@@ -53,7 +55,7 @@ name: foo test
 		tf := file{
 			name: test.name,
 		}
-		got := parseBytes(&tf, test.contents, &fakeParsers)
+		got := parseBytes(&tf, test.contents)
 		assert.Equal(t, test.exp, got)
 	}
 }

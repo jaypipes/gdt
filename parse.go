@@ -1,3 +1,7 @@
+// Use and distribution licensed under the Apache license version 2.
+//
+// See the COPYING file in the root project directory for full text.
+
 package gdt
 
 import (
@@ -9,17 +13,50 @@ import (
 )
 
 var (
-	parsers = map[string]Parser{}
+	// Parsers is the parser registry for gdt
+	Parsers = &parReg
+	parReg  = parserRegistry{
+		entries: map[string]Parser{},
+	}
 )
 
-// RegisterParser registers a parser for one or more test case type names
-func RegisterParser(
-	parser Parser,
-	types ...string,
-) {
-	for _, typ := range types {
-		parsers[strings.ToLower(typ)] = parser
+// Parser is the driver interface for parsers of different types of tests
+type Parser interface {
+	// Parse the supplied raw contents and append any elements to the supplied
+	// ContextAppendable
+	Parse(ca ContextAppendable, contents []byte) error
+}
+
+// parserRegistry stores all known Parsers
+type parserRegistry struct {
+	entries map[string]Parser
+}
+
+// Register associates a parser to one or more types of test (files)
+func (pr *parserRegistry) Register(p Parser, testTypes ...string) {
+	for _, tt := range testTypes {
+		pr.entries[strings.ToLower(tt)] = p
 	}
+}
+
+// Get returns the parser for a given test type or nil if no such parser was
+// recognized in the parser registry
+func (pr *parserRegistry) Get(testType string) Parser {
+	if pr == nil {
+		return nil
+	}
+	return pr.entries[strings.ToLower(testType)]
+}
+
+// List returns a slice of registered parsers
+func (pr *parserRegistry) List() []Parser {
+	res := make([]Parser, len(pr.entries))
+	x := 0
+	for _, p := range pr.entries {
+		res[x] = p
+		x++
+	}
+	return res
 }
 
 type fileSchema struct {
@@ -42,20 +79,19 @@ func (tf *file) parse(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	return parseBytes(tf, contents, &parsers)
+	return parseBytes(tf, contents)
 }
 
 func parseBytes(
 	tf *file,
 	contents []byte,
-	typeParsers *map[string]Parser,
 ) error {
 	tfs := fileSchema{}
 	if err := yaml.Unmarshal(contents, &tfs); err != nil {
 		return ErrInvalidYAML
 	}
-	parser, found := (*typeParsers)[strings.ToLower(tfs.Type)]
-	if !found {
+	parser := Parsers.Get(tfs.Type)
+	if parser == nil {
 		return ErrUnknownParser
 	}
 

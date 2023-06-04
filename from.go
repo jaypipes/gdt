@@ -1,3 +1,7 @@
+// Use and distribution licensed under the Apache license version 2.
+//
+// See the COPYING file in the root project directory for full text.
+
 package gdt
 
 import (
@@ -48,7 +52,7 @@ func fromDir(ctx *Context, dirPath string) (Runnable, error) {
 	// List YAML files in the directory and parse each into a testable unit
 	s := &suite{
 		path: dirPath,
-		// TODO(jaypipes): Allows name/description of suite
+		// TODO(jaypipes): Allow name/description of suite
 		name:        dirPath,
 		description: dirPath,
 	}
