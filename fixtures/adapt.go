@@ -4,12 +4,16 @@
 
 package fixtures
 
-import "github.com/jaypipes/gdt"
+import (
+	"strings"
+
+	"github.com/jaypipes/gdt"
+)
 
 type simpleFixture struct {
 	starter func()
 	stopper func()
-	state   map[string]string
+	state   map[string]interface{}
 }
 
 // Start sets up any resources the fixture uses
@@ -30,26 +34,25 @@ func (f *simpleFixture) Stop() {
 // key
 func (f *simpleFixture) HasState(key string) bool {
 	if f.state != nil {
-		if _, ok := f.state[key]; ok {
-			return true
-		}
+		_, ok := f.state[strings.ToLower(key)]
+		return ok
 	}
 	return false
 }
 
-// GetState returns a string attribute from the fixture's state map if the
-// supplied key exists, otherwise returns empty string
+// State returns a piece of state from the fixture's state map if the supplied
+// key exists, otherwise returns nil
 func (f *simpleFixture) State(key string) interface{} {
 	if f.state != nil {
-		return f.state[key]
+		return f.state[strings.ToLower(key)]
 	}
-	return ""
+	return nil
 }
 
 type WithOption struct {
 	Starter func()
 	Stopper func()
-	State   map[string]string
+	State   map[string]interface{}
 }
 
 // WithStart allows a starter functor to be adapted into a fixture
@@ -63,7 +66,7 @@ func WithStop(stopper func()) WithOption {
 }
 
 // WithState allows a map of state key/values to be adapted into a fixture
-func WithState(state map[string]string) WithOption {
+func WithState(state map[string]interface{}) WithOption {
 	return WithOption{State: state}
 }
 

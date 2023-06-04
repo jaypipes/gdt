@@ -38,14 +38,15 @@ func (f *jsonFixture) HasState(path string) bool {
 	return true
 }
 
-// GetState returns the value at supplied JSONPath expression
+// GetState returns the value at supplied JSONPath expression or nil if the
+// JSONPath expression does not result in any matched field
 func (f *jsonFixture) State(path string) interface{} {
 	if f.data == nil {
-		return ""
+		return nil
 	}
 	got, err := jsonpath.Get(path, f.data)
 	if err != nil {
-		return ""
+		return nil
 	}
 	switch got.(type) {
 	case string:
@@ -53,7 +54,7 @@ func (f *jsonFixture) State(path string) interface{} {
 	case float64:
 		return strconv.FormatFloat(got.(float64), 'f', 0, 64)
 	default:
-		return ""
+		return nil
 	}
 }
 
