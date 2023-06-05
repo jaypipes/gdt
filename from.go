@@ -47,12 +47,7 @@ func From(path string) (Runnable, error) {
 // representing the suite of test cases in that directory.
 func FromDir(dirPath string) (Runnable, error) {
 	// List YAML files in the directory and parse each into a testable unit
-	s := &suite{
-		path: dirPath,
-		// TODO(jaypipes): Allow name/description of suite
-		name:        dirPath,
-		description: dirPath,
-	}
+	s := NewTestSuite(WithPath(dirPath))
 
 	if err := filepath.Walk(
 		dirPath,

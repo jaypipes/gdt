@@ -49,3 +49,22 @@ func (tc *TestCase) Run(t *testing.T, ctx *Context) {
 		}
 	})
 }
+
+// NewTestCase returns a new TestCase
+func NewTestCase(options ...*Option) *TestCase {
+	merged := mergeOptions(options)
+	tc := &TestCase{}
+	if merged.path != nil {
+		tc.path = *merged.path
+	}
+	if merged.name != nil {
+		tc.Name = *merged.name
+	}
+	if merged.description != nil {
+		tc.Description = *merged.description
+	}
+	if merged.typ != nil {
+		tc.Type = *merged.typ
+	}
+	return tc
+}
