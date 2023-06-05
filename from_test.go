@@ -18,7 +18,7 @@ func (p *fooParser) Parse(gdt.Appendable, []byte) error {
 }
 
 func TestFromBytes(t *testing.T) {
-	gdt.Parsers.Register(&fooParser{}, "foo")
+	gdt.TestTypeParsers.Register(&fooParser{}, "foo")
 	tests := []struct {
 		name     string
 		contents []byte

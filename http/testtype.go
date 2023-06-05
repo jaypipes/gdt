@@ -21,6 +21,10 @@ const (
 	msgJSONSchemaFileNotFound         = "unable to find JSONSchema file: %s"
 )
 
+func init() {
+	gdt.TestTypeParsers.Register(&httpParser{}, "http", "")
+}
+
 func errUnsupportedJSONSchemaReference(url string) error {
 	return fmt.Errorf(msgUnsupportedJSONSchemaReference, url)
 }

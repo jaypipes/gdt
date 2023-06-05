@@ -109,7 +109,7 @@ func FromBytes(contents []byte) (Runnable, error) {
 	}
 
 	tc.Type = strings.ToLower(tc.Type)
-	parser := Parsers.Get(tc.Type)
+	parser := TestTypeParsers.Get(tc.Type)
 	if parser == nil {
 		return nil, ErrUnknownParser
 	}
