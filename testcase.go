@@ -5,56 +5,8 @@
 package gdt
 
 import (
-	"strings"
 	"testing"
 )
-
-var (
-	// Parsers is the parser registry for gdt
-	Parsers = &parReg
-	parReg  = parserRegistry{
-		entries: map[string]Parser{},
-	}
-)
-
-// Parser is the driver interface for parsers of different types of tests
-type Parser interface {
-	// Parse the supplied raw contents and append any elements to the supplied
-	// ContextAppendable
-	Parse(ca Appendable, contents []byte) error
-}
-
-// parserRegistry stores all known Parsers
-type parserRegistry struct {
-	entries map[string]Parser
-}
-
-// Register associates a parser to one or more types of test (files)
-func (pr *parserRegistry) Register(p Parser, testTypes ...string) {
-	for _, tt := range testTypes {
-		pr.entries[strings.ToLower(tt)] = p
-	}
-}
-
-// Get returns the parser for a given test type or nil if no such parser was
-// recognized in the parser registry
-func (pr *parserRegistry) Get(testType string) Parser {
-	if pr == nil {
-		return nil
-	}
-	return pr.entries[strings.ToLower(testType)]
-}
-
-// List returns a slice of registered parsers
-func (pr *parserRegistry) List() []Parser {
-	res := make([]Parser, len(pr.entries))
-	x := 0
-	for _, p := range pr.entries {
-		res[x] = p
-		x++
-	}
-	return res
-}
 
 // TestCase is a generalized gdt test case file. It contains a set of Runnable
 // test units.
@@ -96,4 +48,23 @@ func (tc *TestCase) Run(t *testing.T, ctx *Context) {
 			unit.Run(t, ctx)
 		}
 	})
+}
+
+// NewTestCase returns a new TestCase
+func NewTestCase(options ...*Option) *TestCase {
+	merged := mergeOptions(options)
+	tc := &TestCase{}
+	if merged.path != nil {
+		tc.path = *merged.path
+	}
+	if merged.name != nil {
+		tc.Name = *merged.name
+	}
+	if merged.description != nil {
+		tc.Description = *merged.description
+	}
+	if merged.typ != nil {
+		tc.Type = *merged.typ
+	}
+	return tc
 }
