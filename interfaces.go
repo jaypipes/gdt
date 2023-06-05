@@ -6,16 +6,10 @@ import "testing"
 // pointer to a testing.T. Example things that implement this interface are
 // gdt.TestCase and gdt.TestSuite
 type Runnable interface {
-	Run(*testing.T)
+	Run(*testing.T, *Context)
 }
 
 // Appendable simply allows some runnable thing to be added to it
 type Appendable interface {
 	Append(Runnable)
-}
-
-// ContextAppendable is an Appendable that can return a Context
-type ContextAppendable interface {
-	Appendable
-	Context() *Context
 }
