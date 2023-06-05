@@ -2,60 +2,70 @@
 //
 // See the COPYING file in the root project directory for full text.
 
-package gdt
+package gdt_test
 
 import (
 	"testing"
 
+	"github.com/jaypipes/gdt"
 	"github.com/stretchr/testify/assert"
 )
 
 type fooParser struct{}
 
-func (p *fooParser) Parse(ContextAppendable, []byte) error {
+func (p *fooParser) Parse(gdt.Appendable, []byte) error {
 	return nil
 }
 
-func TestParseBytes(t *testing.T) {
-	Parsers.Register(&fooParser{}, "foo")
+func TestFromBytes(t *testing.T) {
+	gdt.Parsers.Register(&fooParser{}, "foo")
 	tests := []struct {
 		name     string
 		contents []byte
-		exp      error
+		err      error
+		tc       *gdt.TestCase
 	}{
 		{
 			name:     "empty content",
 			contents: []byte{},
-			exp:      ErrUnknownParser,
+			err:      gdt.ErrUnknownParser,
+			tc:       nil,
 		},
 		{
 			name: "bad YAML",
 			contents: []byte(`
 			bad YAML, Indy
 			`),
-			exp: ErrInvalidYAML,
+			err: gdt.ErrInvalidYAML,
+			tc:  nil,
 		},
 		{
 			name: "unknown parser",
 			contents: []byte(`type: bar
 name: bar test
 `),
-			exp: ErrUnknownParser,
+			err: gdt.ErrUnknownParser,
+			tc:  nil,
 		},
 		{
 			name: "found parser",
 			contents: []byte(`type: foo
 name: foo test
 `),
-			exp: nil,
+			err: nil,
+			tc: &gdt.TestCase{
+				Type: "foo",
+				Name: "foo test",
+			},
 		},
 	}
 
 	for _, test := range tests {
-		tf := file{
-			name: test.name,
+		tc, err := gdt.FromBytes(test.contents)
+		if err != nil {
+			assert.Equal(t, test.err, err)
+		} else {
+			assert.Equal(t, test.tc, tc)
 		}
-		got := parseBytes(&tf, test.contents)
-		assert.Equal(t, test.exp, got)
 	}
 }

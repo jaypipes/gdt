@@ -27,8 +27,8 @@ func (s *suite) Append(r Runnable) {
 }
 
 // Run executes the tests in the test case
-func (s *suite) Run(t *testing.T) {
+func (s *suite) Run(t *testing.T, ctx *Context) {
 	for _, unit := range s.units {
-		unit.Run(t)
+		unit.Run(t, ctx)
 	}
 }

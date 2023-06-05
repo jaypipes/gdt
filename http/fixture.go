@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	FIXTURE_STATE_KEY_BASE_URL = "http.base_url"
-	FIXTURE_STATE_KEY_CLIENT   = "http.client"
+	StateKeyBaseURL = "http.base_url"
+	StateKeyClient  = "http.client"
 )
 
 type httpServerFixture struct {
@@ -38,7 +38,7 @@ func (f *httpServerFixture) Stop() {
 func (f *httpServerFixture) HasState(key string) bool {
 	lkey := strings.ToLower(key)
 	switch lkey {
-	case FIXTURE_STATE_KEY_BASE_URL, FIXTURE_STATE_KEY_CLIENT:
+	case StateKeyBaseURL, StateKeyClient:
 		return true
 	}
 	return false
@@ -47,9 +47,9 @@ func (f *httpServerFixture) HasState(key string) bool {
 func (f *httpServerFixture) State(key string) interface{} {
 	key = strings.ToLower(key)
 	switch key {
-	case FIXTURE_STATE_KEY_BASE_URL:
+	case StateKeyBaseURL:
 		return f.server.URL
-	case FIXTURE_STATE_KEY_CLIENT:
+	case StateKeyClient:
 		return f.server.Client()
 	}
 	return ""

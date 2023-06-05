@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	errExpectedLocationHeader = errors.New("Expected Location HTTP Header in previous response")
+	ErrExpectedLocationHeader = errors.New("Expected Location HTTP Header in previous response")
 )
 
 type httpFileConfig struct {
@@ -30,14 +30,13 @@ type httpFileConfig struct {
 
 // httpFile contains groups of tests of HTTP APIs
 type httpFile struct {
-	ctx *gdt.Context
 	cfg *httpFileConfig
 	// cache of last HTTP response one of the test units executed
 	PrevResponse *nethttp.Response
 }
 
 // baseURL returns the base URL to use when constructing HTTP requests
-func (hf *httpFile) baseURL() string {
+func (hf *httpFile) baseURL(ctx *gdt.Context) string {
 	// If the httpFile has been manually configured and the configuration
 	// contains a base URL, use that. Otherwise, check to see if there is a
 	// fixture in the registry that has an "http.base_url" state key and use
@@ -47,9 +46,9 @@ func (hf *httpFile) baseURL() string {
 	}
 	// query the fixture registry to determine if any of them contain an
 	// http.base_url state attribute.
-	for _, f := range hf.ctx.Fixtures.List() {
-		if f.HasState(FIXTURE_STATE_KEY_BASE_URL) {
-			return f.State(FIXTURE_STATE_KEY_BASE_URL).(string)
+	for _, f := range ctx.Fixtures.List() {
+		if f.HasState(StateKeyBaseURL) {
+			return f.State(StateKeyBaseURL).(string)
 		}
 	}
 	return ""
@@ -58,12 +57,12 @@ func (hf *httpFile) baseURL() string {
 // client returns the HTTP client to use when executing HTTP requests. If any
 // fixture provides a state with key "http.client", the fixture is asked for
 // the HTTP client. Otherwise, we use the net/http.DefaultClient
-func (hf *httpFile) client() *nethttp.Client {
+func (hf *httpFile) client(ctx *gdt.Context) *nethttp.Client {
 	// query the fixture registry to determine if any of them contain an
 	// http.client state attribute.
-	for _, f := range hf.ctx.Fixtures.List() {
-		if f.HasState(FIXTURE_STATE_KEY_CLIENT) {
-			c, ok := f.State(FIXTURE_STATE_KEY_CLIENT).(*nethttp.Client)
+	for _, f := range ctx.Fixtures.List() {
+		if f.HasState(StateKeyClient) {
+			c, ok := f.State(StateKeyClient).(*nethttp.Client)
 			if !ok {
 				panic("fixture failed to return a *net/http.Client")
 			}
@@ -77,13 +76,16 @@ func (hf *httpFile) client() *nethttp.Client {
 // string keys or values of the map into the results of calling the fixture
 // set's State() method.
 func (hf *httpFile) preprocessMap(
-	m reflect.Value, kt reflect.Type, vt reflect.Type,
+	ctx *gdt.Context,
+	m reflect.Value,
+	kt reflect.Type,
+	vt reflect.Type,
 ) error {
 	it := m.MapRange()
 	for it.Next() {
 		if kt.Kind() == reflect.String {
 			keyStr := it.Key().String()
-			for _, f := range hf.ctx.Fixtures.List() {
+			for _, f := range ctx.Fixtures.List() {
 				if !f.HasState(keyStr) {
 					continue
 				}
@@ -92,7 +94,7 @@ func (hf *httpFile) preprocessMap(
 			}
 
 			val := it.Value()
-			err := hf.preprocessMapValue(m, reflect.ValueOf(keyStr), val, val.Type())
+			err := hf.preprocessMapValue(ctx, m, reflect.ValueOf(keyStr), val, val.Type())
 			if err != nil {
 				return err
 			}
@@ -101,7 +103,13 @@ func (hf *httpFile) preprocessMap(
 	return nil
 }
 
-func (hf *httpFile) preprocessMapValue(m reflect.Value, k reflect.Value, v reflect.Value, vt reflect.Type) error {
+func (hf *httpFile) preprocessMapValue(
+	ctx *gdt.Context,
+	m reflect.Value,
+	k reflect.Value,
+	v reflect.Value,
+	vt reflect.Type,
+) error {
 	if vt.Kind() == reflect.Interface {
 		v = v.Elem()
 		vt = v.Type()
@@ -115,10 +123,10 @@ func (hf *httpFile) preprocessMapValue(m reflect.Value, k reflect.Value, v refle
 		}
 		fmt.Printf("map element is an array.\n")
 	case reflect.Map:
-		return hf.preprocessMap(v, vt.Key(), vt.Elem())
+		return hf.preprocessMap(ctx, v, vt.Key(), vt.Elem())
 	case reflect.String:
 		valStr := v.String()
-		for _, f := range hf.ctx.Fixtures.List() {
+		for _, f := range ctx.Fixtures.List() {
 			if !f.HasState(valStr) {
 				continue
 			}
@@ -155,18 +163,18 @@ type httpTest struct {
 // field is first queried to see if it is the special $LOCATION string. If it
 // is, then we return the previous HTTP response's Location header. Otherwise,
 // we construct the URL from the httpFile's base URL and the test's url field.
-func (ht *httpTest) getURL() (string, error) {
+func (ht *httpTest) getURL(ctx *gdt.Context) (string, error) {
 	if strings.ToUpper(ht.url) == "$LOCATION" {
 		if ht.f.PrevResponse == nil {
 			panic("test unit referenced $LOCATION before executing an HTTP request")
 		}
 		url, err := ht.f.PrevResponse.Location()
 		if err != nil {
-			return "", errExpectedLocationHeader
+			return "", ErrExpectedLocationHeader
 		}
 		return url.String(), nil
 	}
-	base := ht.f.baseURL()
+	base := ht.f.baseURL(ctx)
 	return base + ht.url, nil
 }
 
@@ -175,7 +183,7 @@ func (ht *httpTest) getURL() (string, error) {
 // expressions. If we find any, we query the fixture registry to see if any
 // fixtures have a value that matches the JSONPath expression. See
 // gdt.fixtures:jsonFixture for more information on how this works
-func (ht *httpTest) processRequestData() {
+func (ht *httpTest) processRequestData(ctx *gdt.Context) {
 	if ht.data == nil {
 		return
 	}
@@ -194,26 +202,26 @@ func (ht *httpTest) processRequestData() {
 		for i := 0; i < v.Len(); i++ {
 			item := v.Index(i).Elem()
 			it := item.Type()
-			ht.f.preprocessMap(item, it.Key(), it.Elem())
+			ht.f.preprocessMap(ctx, item, it.Key(), it.Elem())
 		}
 		//	ht.f.preprocessSliceValue(v, vt.Key(), vt.Elem())
 	case reflect.Map:
-		ht.f.preprocessMap(v, vt.Key(), vt.Elem())
+		ht.f.preprocessMap(ctx, v, vt.Key(), vt.Elem())
 	}
 }
 
 // Run executes the test described by the HTTP test. A new HTTP request and
 // response pair is created during this call.
-func (ht *httpTest) Run(t *testing.T) {
+func (ht *httpTest) Run(t *testing.T, ctx *gdt.Context) {
 	var body io.Reader
 	if ht.data != nil {
-		ht.processRequestData()
+		ht.processRequestData(ctx)
 		jsonBody, err := json.Marshal(ht.data)
 		require.Nil(t, err)
 		body = bytes.NewReader(jsonBody)
 	}
 	t.Run(ht.name, func(t *testing.T) {
-		url, err := ht.getURL()
+		url, err := ht.getURL(ctx)
 		if err != nil {
 			panic(err)
 		}
@@ -227,7 +235,7 @@ func (ht *httpTest) Run(t *testing.T) {
 
 		// TODO(jaypipes): Allow customization of the HTTP client for proxying,
 		// TLS, etc
-		c := ht.f.client()
+		c := ht.f.client(ctx)
 		gdt.V3("http.file.httpFile:client", "using http.Client: %+v\n", c)
 
 		resp, err := c.Do(req)
