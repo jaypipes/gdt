@@ -30,6 +30,28 @@ const (
 	msgFormatBad           = "Expected %s to be formatted as %s"
 )
 
+// JSONAssertion represents one or more assertions about JSON data responses
+type JSONAssertion struct {
+	Length      *uint             `json:"length,omitempty"`
+	Paths       map[string]string `json:"paths,omitempty"`
+	PathFormats map[string]string `json:"path_formats,omitempty"`
+	Schema      string            `json:"schema,omitempty"`
+}
+
+// ResponseAssertion contains one or more assertions about an HTTP response
+type ResponseAssertion struct {
+	// JSON contains the assertions about JSON data in the response
+	JSON *JSONAssertion `json:"json,omitempty"`
+	// Headers contains a list of HTTP headers that should be in the response
+	Headers []string `json:"headers,omitempty"`
+	// Strings contains a list of strings that should be present in the
+	// response content
+	Strings []string `json:"strings,omitempty"`
+	// Status contains the numeric HTTP status code (e.g. 200 or 404) that
+	// should be returned in the HTTP response
+	Status *int `json:"status,omitempty"`
+}
+
 func assertHTTPStatusEqual(t *testing.T, r *nethttp.Response, exp int) {
 	t.Helper()
 	got := r.StatusCode
@@ -60,7 +82,7 @@ func assertHeader(t *testing.T, r *nethttp.Response, exp string) {
 	}
 }
 
-func assertJSON(t *testing.T, r *nethttp.Response, b []byte, jspec *jsonAssertion) {
+func assertJSON(t *testing.T, r *nethttp.Response, b []byte, jspec *JSONAssertion) {
 	t.Helper()
 	if jspec.Length != nil {
 		// An error may have been returned as plain/text. In this case, we

@@ -5,6 +5,9 @@
 package gdt
 
 import (
+	"context"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -27,9 +30,9 @@ func (s *TestSuite) Append(r Runnable) {
 }
 
 // Run executes the tests in the test case
-func (s *TestSuite) Run(t *testing.T, ctx *Context) {
+func (s *TestSuite) Run(ctx context.Context, t *testing.T) {
 	for _, unit := range s.units {
-		unit.Run(t, ctx)
+		unit.Run(ctx, t)
 	}
 }
 
@@ -47,4 +50,40 @@ func NewTestSuite(options ...*Option) *TestSuite {
 		s.Description = *merged.description
 	}
 	return s
+}
+
+// NewTestSuiteFromDir reads the supplied directory path and returns a
+// TestSuite representing the suite of test cases in that directory.
+func NewTestSuiteFromDir(dirPath string) (*TestSuite, error) {
+	// List YAML files in the directory and parse each into a testable unit
+	s := NewTestSuite(WithPath(dirPath))
+
+	if err := filepath.Walk(
+		dirPath,
+		func(path string, info os.FileInfo, err error) error {
+			if info.IsDir() {
+				return nil
+			}
+			suffix := filepath.Ext(path)
+			if suffix != ".yaml" {
+				return nil
+			}
+			f, err := os.Open(path)
+
+			if err != nil {
+				return err
+			}
+			defer f.Close()
+
+			tc, err := NewTestCaseFromReader(f, path)
+			if err != nil {
+				return err
+			}
+			s.Append(tc)
+			return nil
+		},
+	); err != nil {
+		return nil, err
+	}
+	return s, nil
 }
