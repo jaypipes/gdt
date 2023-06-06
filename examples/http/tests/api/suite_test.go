@@ -17,7 +17,7 @@ import (
 	"github.com/jaypipes/gdt/fixtures"
 	"github.com/jaypipes/gdt/http"
 
-	"github.com/jaypipes/gdt/examples/books/api"
+	"github.com/jaypipes/gdt/examples/http/api"
 )
 
 const (
@@ -60,7 +60,7 @@ func dataFixture() gdt.Fixture {
 	return fix
 }
 
-func TestBooksAPI_HTTP(t *testing.T) {
+func TestHTTP(t *testing.T) {
 	// Register an HTTP server fixture that spins up the API service on a
 	// random port on localhost
 	logger := log.New(os.Stdout, "books_api_http: ", log.LstdFlags)
@@ -77,7 +77,7 @@ func TestBooksAPI_HTTP(t *testing.T) {
 	ts.Run(gdt.NewContext(), t)
 }
 
-func TestBooksAPI_HTTPS(t *testing.T) {
+func TestHTTPS(t *testing.T) {
 	// Register an HTTPS server fixture that spins up the API service on a
 	// random port on localhost and a well-known cert for localhost/127.0.0.1
 	logger := log.New(os.Stdout, "books_api_https: ", log.LstdFlags)
