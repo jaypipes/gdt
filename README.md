@@ -1,23 +1,9 @@
-# `gdt` - The Golang Declarative Testing framework ![go test workflow](https://github.com/jaypipes/gdt/actions/workflows/gate-tests.yml/badge.svg)
+# `gdt` - The Go Declarative Testing framework ![go test workflow](https://github.com/jaypipes/gdt/actions/workflows/gate-tests.yml/badge.svg)
 
 `gdt` is a testing library that allows test authors to cleanly describe tests
 in a YAML file. `gdt` reads YAML files that describe a test's assertions and
 then builds a set of Golang structures that the standard Golang
 [`testing`](https://golang.org/pkg/testing/) package can execute.
-
-## Installation
-
-`gdt` is a Golang library and is intended to be included in your own Golang
-application's test code as a Golang package dependency.
-
-Install `gdt` into your `$GOPATH` by executing:
-
-```
-go get -u github.com/jaypipes/gdt
-```
-
-Alternately, include `github.com/jaypipes/gdt` in your Golang dependency
-management of choice.
 
 ## Introduction
 
@@ -146,7 +132,7 @@ This is perfectly fine for simple unit tests of Golang code. However, once the
 tests begin to call multiple APIs or packages, the Ginkgo Golang tests start to
 get cumbersome. Consider the following example of *functionally* testing the
 failure modes for a simple HTTP REST API endpoint
-([`failure_test.go`](examples/books/api/failure_test.go.txt)):
+([`failure_test.go`](https://github.com/jaypipes/gdt-examples/blob/main/http/api/failure_test.go)):
 
 
 ```go
@@ -163,7 +149,7 @@ import (
     . "github.com/onsi/ginkgo"
     . "github.com/onsi/gomega"
 
-    "github.com/jaypipes/gdt/examples/books/api"
+    "github.com/jaypipes/gdt-examples/http/api"
 )
 
 var (
@@ -262,7 +248,7 @@ var _ = Describe("Books API - GET /books failures", func() {
 The above test code obscures what is being tested by cluttering the test
 assertions with the Golang closures and accessor code. Compare the above with
 how `gdt` allows the test author to describe the same assertions
-([`failures.yaml`](examples/books/tests/api/failures.yaml)):
+([`failures.yaml`](https://github.com/jaypipes/gdt-examples/blob/main/http/tests/api/failures.yaml)):
 
 ```yaml
 require:
@@ -304,7 +290,8 @@ Consider a Ginkgo test case that checks the following behaviour:
 * The newly-created book's ID field is a valid UUID
 * The newly-created book's publisher has an address containing a known state code
 
-A typical implementation of a Ginkgo Golang test might look like this ([`create_then_get_test.go`](examples/books/api/create_then_get_test.go.txt)):
+A typical implementation of a Ginkgo Golang test might look like this
+([`create_then_get_test.go`](https://github.com/jaypipes/gdt-examples/blob/main/http/api/create_then_get_test.go)):
 
 ```go
 package api_test
@@ -317,7 +304,7 @@ import (
     . "github.com/onsi/ginkgo"
     . "github.com/onsi/gomega"
 
-    "github.com/jaypipes/gdt/examples/books/api"
+    "github.com/jaypipes/gdt-examples/http/api"
 )
 
 var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
@@ -385,7 +372,7 @@ var _ = Describe("Books API - POST /books -> GET /books from Location", func() {
 
 Compare the above test code to the following YAML document that a `gdt` user
 might create to describe the same assertions 
-([`create_then_get.yaml`](examples/books/tests/api/create_then_get.yaml)):
+([`create_then_get.yaml`](https://github.com/jaypipes/gdt-examples/blob/main/http/tests/api/create_then_get.yaml)):
 
 ```yaml
 require:
@@ -433,8 +420,9 @@ All gdt test files contain YAML. All `gdt` test files, regardless of their type
 
 Depending on the `type` of the test, a parser is invoked to interpret the test
 file according to that particular type of test. See the documentation for the
-[`gdt.http`](http/README.md) test type for an example of how different types of
-tests are handled by an extensible parsing system in `gdt`.
+[`gdt-http`](https://github.com/jaypipes/gdt-http) test type for an example of
+how different types of tests are handled by an extensible parsing system in
+`gdt`.
 
 ## Contributing and acknowledgements
 
