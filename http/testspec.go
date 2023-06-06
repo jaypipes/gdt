@@ -25,7 +25,7 @@ type TestSpec struct {
 	defaults *TestCaseDefaults
 	// Name for the individual HTTP call test
 	Name string `json:"name,omitempty"`
-	// Description of the test (defaults to Name)
+	// Description of the test
 	Description string `json:"description,omitempty"`
 	// URL being called by HTTP client
 	URL string `json:"url,omitempty"`
