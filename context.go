@@ -4,15 +4,25 @@
 
 package gdt
 
-// Context contains fixtures and other state that is passed to the Parse
-// function
-type Context struct {
-	// Fixtures is a pointer to the fixture registry used by the test files
-	Fixtures FixtureRegistry
+import "context"
+
+type ContextKey string
+
+const (
+	fixturesContextKey = ContextKey("gdt.fixtures")
+)
+
+// GetFixturesFromContext returns the set of gdt Fixtures from the supplied
+// context
+func GetFixturesFromContext(ctx context.Context) FixtureRegistry {
+	if v := ctx.Value(fixturesContextKey); v != nil {
+		return v.(FixtureRegistry)
+	}
+	return nil
 }
 
-func NewContext() *Context {
-	return &Context{
-		Fixtures: Fixtures,
-	}
+// NewContext returns a new gdt testing context that can be passed to a
+// Runnable
+func NewContext() context.Context {
+	return context.WithValue(context.Background(), fixturesContextKey, Fixtures)
 }

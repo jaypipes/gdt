@@ -74,7 +74,7 @@ func TestBooksAPI_HTTP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts.Run(t, gdt.NewContext())
+	ts.Run(gdt.NewContext(), t)
 }
 
 func TestBooksAPI_HTTPS(t *testing.T) {
@@ -91,5 +91,5 @@ func TestBooksAPI_HTTPS(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	ts.Run(t, gdt.NewContext())
+	ts.Run(gdt.NewContext(), t)
 }
