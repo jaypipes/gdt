@@ -22,7 +22,7 @@ const (
 )
 
 func init() {
-	gdt.TestTypeParsers.Register(&httpParser{}, "http", "")
+	gdt.TestTypeParsers.Register(&parser{}, "http", "")
 }
 
 func errUnsupportedJSONSchemaReference(url string) error {
@@ -33,12 +33,12 @@ func errJSONSchemaFileNotFound(path string) error {
 	return fmt.Errorf(msgJSONSchemaFileNotFound, path)
 }
 
-type httpParser struct{}
+type parser struct{}
 
-// Parse accepts a Testcase and a string of YAML contents from a gdt test file.
-// It then parses the HTTP test case and adds the HTTP-specific tests to the
-// supplied Testcase
-func (p *httpParser) Parse(a gdt.Appendable, contents []byte) error {
+// Parse accepts an Appendable and a string of YAML contents from a gdt test
+// file. It then parses the HTTP test case file and adds the HTTP-specific
+// tests to the supplied Appendable
+func (p *parser) Parse(a gdt.Appendable, contents []byte) error {
 	var err error
 	tc := TestCase{}
 	if err = yaml.Unmarshal(contents, &tc); err != nil {
@@ -50,6 +50,11 @@ func (p *httpParser) Parse(a gdt.Appendable, contents []byte) error {
 		}
 		if err = validateMethodAndURL(s); err != nil {
 			return err
+		}
+		// If the user did not specify a name for the test spec, just default
+		// it to the method and URL
+		if s.Name == "" {
+			s.Name = s.Method + ":" + s.URL
 		}
 		s.defaults = tc.Defaults
 	}
