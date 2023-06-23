@@ -5,35 +5,50 @@
 package gdt
 
 import (
+	"io"
 	"os"
-	"path/filepath"
+
+	gdterrors "github.com/jaypipes/gdt-core/errors"
+	"github.com/jaypipes/gdt-core/scenario"
+	"github.com/jaypipes/gdt-core/suite"
+	gdttypes "github.com/jaypipes/gdt-core/types"
 )
 
-// From returns a Runnable thing after reading a supplied filepath and
-// parsing the file or directory into a test case or test suite
-func From(path string) (Runnable, error) {
-	// Determine if the path is a directory or a regular file. If it's a
-	// directory, construct a suite. If it's a regular file, construct a test
-	// case by parsing the contents.
-	path, _ = filepath.Abs(path)
-	f, err := os.Open(path)
-
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	fi, err := f.Stat()
-	switch {
-	case err != nil:
-		return nil, err
-	case fi.IsDir():
-		return NewTestSuiteFromDir(path)
-	default:
-		tc, err := NewTestCaseFromReader(f, path)
+// From returns a new Runnable thing from an `io.Reader`, a string file or
+// directory path, or the raw bytes of YAML content describing a scenario or
+// suite.
+func From(source interface{}) (gdttypes.Runnable, error) {
+	switch source.(type) {
+	case io.Reader:
+		return scenario.FromReader(
+			source.(io.Reader),
+			scenario.WithContext(defaultContext),
+		)
+	case string:
+		path := source.(string)
+		f, err := os.Open(path)
 		if err != nil {
 			return nil, err
 		}
-		return tc, nil
+		fi, err := f.Stat()
+		if err != nil {
+			return nil, err
+		}
+		if fi.IsDir() {
+			return suite.FromDir(
+				path,
+				suite.WithContext(defaultContext),
+			)
+		} else {
+			return scenario.FromReader(
+				f,
+				scenario.WithPath(path),
+				scenario.WithContext(defaultContext),
+			)
+		}
+	case []byte:
+		return scenario.FromBytes(source.([]byte))
+	default:
+		return nil, gdterrors.UnknownSourceType(source)
 	}
 }

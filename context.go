@@ -4,25 +4,37 @@
 
 package gdt
 
-import "context"
+import (
+	"context"
 
-type ContextKey string
-
-const (
-	fixturesContextKey = ContextKey("gdt.fixtures")
+	gdtcontext "github.com/jaypipes/gdt-core/context"
 )
 
-// GetFixturesFromContext returns the set of gdt Fixtures from the supplied
-// context
-func GetFixturesFromContext(ctx context.Context) FixtureRegistry {
-	if v := ctx.Value(fixturesContextKey); v != nil {
-		return v.(FixtureRegistry)
-	}
-	return nil
+var (
+	defaultContext context.Context
+)
+
+func init() {
+	defaultContext = NewContext()
 }
 
-// NewContext returns a new gdt testing context that can be passed to a
-// Runnable
-func NewContext() context.Context {
-	return context.WithValue(context.Background(), fixturesContextKey, Fixtures)
+var (
+	RegisterFixture = gdtcontext.RegisterFixture
+	WithFixtures    = gdtcontext.WithFixtures
+)
+
+// NewContext returns a new `context.Context` that can be passed to a
+// `Runnable` (a `Suite` or `Scenario` returned from the `From` function).
+//
+// If no set of plugins are supplied as a modifier in this function, the
+// returned context will have the default set of gdt plugins registered in it.
+func NewContext(mods ...gdtcontext.ContextModifier) context.Context {
+	ctx := gdtcontext.New(mods...)
+	plugins := gdtcontext.Plugins(ctx)
+	if len(plugins) == 0 {
+		for _, p := range knownPlugins {
+			ctx = gdtcontext.RegisterPlugin(ctx, p)
+		}
+	}
+	return ctx
 }

@@ -1,0 +1,19 @@
+require:
+ - books_api
+ - books_data
+tests:
+ - name: create two books
+   PUT: /books
+   data:
+    - title: For Whom The Bell Tolls
+      published_on: 1940-10-21
+      pages: 480
+      author_id: $.authors.by_name["Ernest Hemingway"].id
+      publisher_id: $.publishers.by_name["Charles Scribner's Sons"].id
+    - title: To Have and Have Not
+      published_on: 1937-10-15
+      pages: 257
+      author_id: $.authors.by_name["Ernest Hemingway"].id
+      publisher_id: $.publishers.by_name["Charles Scribner's Sons"].id
+   response:
+     status: 200

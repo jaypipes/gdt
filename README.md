@@ -8,9 +8,9 @@ then builds a set of Golang structures that the standard Golang
 ## Introduction
 
 Writing functional tests in Golang can be overly verbose and tedious. When the
-code that functionally tests some part of an application is verbose or tedious,
-then it becomes difficult to read the tests and quickly understand the
-assertions the test is making.
+code that tests some part of an application is verbose or tedious, then it
+becomes difficult to read the tests and quickly understand the assertions the
+test is making.
 
 The more difficult it is to understand the test assertions or the test setups
 and assumptions, the greater the chance that the test improperly validates the
@@ -403,26 +403,94 @@ tests:
          $.id: uuid4
 ```
 
-## `gdt` test file structure
+## `gdt` test scenario structure
 
-All gdt test files contain YAML. All `gdt` test files, regardless of their type
-(see below), have the following attributes:
+A `gdt` test scenario (or just "scenario") is simply a YAML file.
+
+All `gdt` scenarios have the following fields:
 
 * `name`: (optional) string describing the contents of the test file. If
   missing or empty, the filename is used as the name
 * `description`: (optional) string with longer description of the test file
   contents
-* `type`: (optional) string indicating the type of tests contained in the file.
-  `gdt` looks up a test file parser that understands this type of test.
-  Defaults to "http"
-* `require`: (optional) list of strings indicating fixtures that will be
+* `defaults`: (optional) is a map, keyed by a plugin name, of default options
+  and configuration values for that plugin.
+* `require`: (optional) list of strings indicating named fixtures that will be
   started before any of the tests in the file are run
+* `tests`: list of [`Spec`][basespec] specializations that represent the
+  runnable test units in the test scenario.
 
-Depending on the `type` of the test, a parser is invoked to interpret the test
-file according to that particular type of test. See the documentation for the
-[`gdt-http`](https://github.com/jaypipes/gdt-http) test type for an example of
-how different types of tests are handled by an extensible parsing system in
-`gdt`.
+[basespec]: https://github.com/jaypipes/gdt-core/blob/e1d23e0974447de0bcd273f151edebeebc2b96c6/spec/spec.go#L27-L39
+
+The scenario's `tests` field is the most important and the [`Spec`][basespec]
+objects that it contains are the meat of a test scenario.
+
+## `gdt` test spec structure
+
+A spec represents a single *action* that is taken and zero or more
+*assertions* that represent what you expect to see resulting from that action.
+
+Each spec is a specialized class of the base [`Spec`][basespec] that deals with
+a particular type of test. For example, there is a `Spec` class called `exec`
+that allows you to execute arbitrary commands and assert expected result codes
+and output. There is a `Spec` class called `http` that allows you to call an
+HTTP URL and assert that the response looks like what you expect. Depending on
+how you define your test units, `gdt` will parse the YAML definition into one
+of these specialized `Spec` classes.
+
+The base `Spec` class has the following fields (and thus all `Spec` specialized
+classes inherit these fields):
+
+* `name`: (optional) string describing the test unit.
+* `description`: (optional) string with longer description of the test unit.
+* `timeout`: (optional) an object containing [timeout information][timeout] for the test
+  unit.
+* `timeout.after`: a string duration of time the test unit is expected to
+  complete within.
+* `timeout.expected`: a bool indicating that the test unit is expected to not
+  complete before `timeout.after`. This is really only useful in unit testing.
+
+[timeout]: https://github.com/jaypipes/gdt-core/blob/e1d23e0974447de0bcd273f151edebeebc2b96c6/types/timeout.go#L11-L22
+
+### `exec` test spec structure
+
+An exec spec is a specialization of the base [`Spec`][basespec] that allows
+test authors to execute arbitrary commands and assert that the command results
+in an expected result code or output.
+
+The [exec `Spec`][execspec] class has the following fields (in addition to all
+the base `Spec` fields listed above):
+
+* `exec`: a string with the exact command to execute. You may execute more than
+  one command but must include the `shell` field to indicate that the command
+  should be run in a shell. It is best practice, however, to simply use
+  multiple `exec` specs instead of executing multiple commands in a single
+  shell call.
+* `shell`: (optional) a string with the specific shell to use in executing the
+  command. If empty (the default), no shell is used to execute the command and
+  instead the operating system's `exec` family of calls is used.
+* `exit_code`: (optional) an integer with the expected exit code from the
+  executed command. The default successful exit code is 0 and therefore you do
+  not need to specify this if you expect a successful exit code.
+* `out`: (optional) a [`PipeAssertions`][pipeassertions] object containing
+  assertions about content in `stdout`.
+* `out.is`: (optional) a string with the exact contents of `stdout` you expect
+  to get.
+* `out.contains`: (optional) a list of one or more strings that *all* must be
+  present in `stdout`.
+* `out.contains_one_of`: (optional) a list of one or more strings of which *at
+  least one* must be present in `stdout`.
+* `err`: (optional) a [`PipeAssertions`][pipeassertions] object containing
+  assertions about content in `stderr`.
+* `err.is`: (optional) a string with the exact contents of `stderr` you expect
+  to get.
+* `err.contains`: (optional) a list of one or more strings that *all* must be
+  present in `stderr`.
+* `err.contains_one_of`: (optional) a list of one or more strings of which *at
+  least one* must be present in `stderr`.
+
+[execspec]: https://github.com/jaypipes/gdt-core/blob/e1d23e0974447de0bcd273f151edebeebc2b96c6/types/timeout.go#L11-L22
+[pipeassertions]: https://github.com/jaypipes/gdt-core/blob/debff55b194b222a0db65d20ffce94f0aba68504/exec/assertions.go#L16-L27
 
 ## Contributing and acknowledgements
 
