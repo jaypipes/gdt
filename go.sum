@@ -10,10 +10,10 @@ github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaU
 github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510/go.mod h1:pupxD2MaaD3pAXIBCelhxNneeOaAeabZDe5s4K6zSpQ=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/jaypipes/gdt-core v1.6.2 h1:MYG5y0vzHy3ZtZZPanGY5TdpGPqfTs1svlCPwc+v4iA=
-github.com/jaypipes/gdt-core v1.6.2/go.mod h1:2wsyVs5ty1XfowxCnezoGOsovEpFrXQehLCcD0E4+gg=
-github.com/jaypipes/gdt-http v1.3.1 h1:n+IDgYK+1s1uN9y9pk7/wPNIoAYBJ3lTnHo8FeYQ1bM=
-github.com/jaypipes/gdt-http v1.3.1/go.mod h1:0rvvB0CMGnzAkUS3CtudiXYdzGQ8UYjt3Hhuu4Il8Eg=
+github.com/jaypipes/gdt-core v1.7.0 h1:xTdeF0hqzOVcraVJ5uc5BCI4GgIx7b/AlTEjRXpzA5E=
+github.com/jaypipes/gdt-core v1.7.0/go.mod h1:2wsyVs5ty1XfowxCnezoGOsovEpFrXQehLCcD0E4+gg=
+github.com/jaypipes/gdt-http v1.7.0 h1:bAES7uxHB8EepjkiMXViDs5C4jew4ZQ+MdKlaumGmyk=
+github.com/jaypipes/gdt-http v1.7.0/go.mod h1:FXYscTsYeFqQnjLH9Pqj7T9k+IKruJAT2fA18A53+G8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samber/lo v1.38.1 h1:j2XEAqXKb09Am4ebOg31SpvzUTTs6EN3VfgeLUhPdXM=
