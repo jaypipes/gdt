@@ -18,6 +18,7 @@ import (
 // directory path, or the raw bytes of YAML content describing a scenario or
 // suite.
 func From(source interface{}) (gdttypes.Runnable, error) {
+	defaultContext := NewContext()
 	switch source.(type) {
 	case io.Reader:
 		return scenario.FromReader(

@@ -11,14 +11,6 @@ import (
 )
 
 var (
-	defaultContext context.Context
-)
-
-func init() {
-	defaultContext = NewContext()
-}
-
-var (
 	RegisterFixture = gdtcontext.RegisterFixture
 	WithFixtures    = gdtcontext.WithFixtures
 )
@@ -32,7 +24,7 @@ func NewContext(mods ...gdtcontext.ContextModifier) context.Context {
 	ctx := gdtcontext.New(mods...)
 	plugins := gdtcontext.Plugins(ctx)
 	if len(plugins) == 0 {
-		for _, p := range knownPlugins {
+		for _, p := range knownPlugins.List() {
 			ctx = gdtcontext.RegisterPlugin(ctx, p)
 		}
 	}
