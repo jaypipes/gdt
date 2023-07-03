@@ -67,7 +67,7 @@ tests:
    GET: /books/nosuchbook
    response:
      json:
-       length: 0
+       len: 0
      status: 404
 ```
 
@@ -258,13 +258,13 @@ tests:
    GET: /books/nosuchbook
    response:
      json:
-       length: 0
+       len: 0
      status: 404
  - name: invalid query parameter is supplied
    GET: /books?invalidparam=1
    response:
      json:
-       length: 0
+       len: 0
      status: 400
      strings:
        - invalid parameter
@@ -449,8 +449,15 @@ classes inherit these fields):
   complete within.
 * `timeout.expected`: a bool indicating that the test unit is expected to not
   complete before `timeout.after`. This is really only useful in unit testing.
+* `wait` (optional) an object containing [wait information][wait] for the test
+  unit.
+* `wait.before`: a string duration of time that gdt should wait before
+  executing the test unit's action.
+* `wait.after`: a string duration of time that gdt should wait after executing
+  the test unit's action.
 
 [timeout]: https://github.com/jaypipes/gdt-core/blob/e1d23e0974447de0bcd273f151edebeebc2b96c6/types/timeout.go#L11-L22
+[wait]: https://github.com/jaypipes/gdt-core/blob/a204ffb055b284a1e943e1f7c7ec578408071d52/types/wait.go
 
 ### `exec` test spec structure
 

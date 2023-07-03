@@ -10,11 +10,6 @@ import (
 	gdtcontext "github.com/jaypipes/gdt-core/context"
 )
 
-var (
-	RegisterFixture = gdtcontext.RegisterFixture
-	WithFixtures    = gdtcontext.WithFixtures
-)
-
 // NewContext returns a new `context.Context` that can be passed to a
 // `Runnable` (a `Suite` or `Scenario` returned from the `From` function).
 //
