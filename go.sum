@@ -7,8 +7,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 h1:El6M4kTTCOh6aBiKaUGG7oYTSPP8MxqL4YI3kZKwcP4=
 github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510/go.mod h1:pupxD2MaaD3pAXIBCelhxNneeOaAeabZDe5s4K6zSpQ=
-github.com/jaypipes/gdt-core v1.9.1 h1:nW1T/1gp1o/64litNKSMzCALROJxU064FOxT33NTLsA=
-github.com/jaypipes/gdt-core v1.9.1/go.mod h1:38WH3hTNJAoKkK1q/PmiOo74FC5/PsekUINgtOg5Fi8=
+github.com/jaypipes/gdt-core v1.10.0 h1:6t3/gZKjTwvtTHBg70XXIcmPRphGZCl759CKErVxTE0=
+github.com/jaypipes/gdt-core v1.10.0/go.mod h1:38WH3hTNJAoKkK1q/PmiOo74FC5/PsekUINgtOg5Fi8=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/samber/lo v1.38.1 h1:j2XEAqXKb09Am4ebOg31SpvzUTTs6EN3VfgeLUhPdXM=
