@@ -3,7 +3,7 @@ module github.com/jaypipes/gdt
 go 1.19
 
 require (
-	github.com/jaypipes/gdt-core v1.10.0
+	github.com/jaypipes/gdt-core v1.12.0
 	github.com/stretchr/testify v1.8.4
 )
 
